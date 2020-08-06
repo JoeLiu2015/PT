@@ -1,0 +1,4 @@
+This is the first line. Print the input parameters as follows:
+    a. Name : {{ student.name }}
+    b. Score: {{ student.score }}
+End.

@@ -1,0 +1,12 @@
+
+{{['a', 'b', 'c']|'|'.join(self)|self+'{}[]()'}}
+
+{{'joe is a good man'|self.replace(' ', '-')}}
+
+{% f = 'haha' %}
+
+{{f.startswith('ha') ? ('starts with ha'|self.replace(' ', '()')) : 'not starts with ha'}}
+
+{{'joe'.startswith('ha') ? ('starts with ha'|self.replace(' ', '()')) : ('not starts with ha' | self[1:] )}}
+
+===={{loop}}  {{name}}====

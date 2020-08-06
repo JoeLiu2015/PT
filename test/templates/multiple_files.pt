@@ -1,0 +1,26 @@
+{% @output_file('index.html') %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Index</title>
+    </head>
+    <body>
+        <ul>
+          {% for i in range(1, 11) %}
+          <li><a href=".\pages\page{{i}}.html">Page {{i}}</a></li>
+          {% endfor %}
+        </ul>
+    </body>
+</html>
+{% for i in range(1, 11) %}
+{% @output_file('./pages/page' + str(i) + '.html') %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Page {{i}}</title>
+    </head>
+    <body>
+        <p>This is page {{i}}.</p>
+    </body>
+</html>
+{% endfor %}

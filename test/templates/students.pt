@@ -1,0 +1,11 @@
+All students as follows:
+==No index==
+{% for student in students %}
+{% @include('student.pt', {'student': student}) %}
+{% endfor %}
+
+==With index==
+{% for idx, student in enumerate(students) %}
+== {{ idx }} ==
+    {% @include('student.pt', {'student': student}) %}
+{% endfor %}
