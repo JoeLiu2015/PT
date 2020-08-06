@@ -116,7 +116,6 @@ The expression is starts with '{{' and ends with '}}'.
  
     ```
   
-  -    
   - blank trim
     
     ```
@@ -260,3 +259,6 @@ pages\page8.html
 pages\page9.html  
 pages\page10.html    
 ```
+
+### 8. LICENSE
+Apache-2.0 License
