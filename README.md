@@ -27,7 +27,7 @@ To use the template, we just need to write a template file or string and then ex
 **Command**
 
 ```
-python ptctx.py page.pt -out page.html -args "{'page': {'title': 'Test Page', 'body': 'Hello world'} }"
+python pt page.pt -out page.html -args "{'page': {'title': 'Test Page', 'body': 'Hello world'} }"
 ```
 
 **Usage**
