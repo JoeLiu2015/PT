@@ -115,7 +115,7 @@ The expression is starts with '{{' and ends with '}}'.
     dic.keyname     - it can get the value from the dic with its key 'keyname'
  
     ```
-  
+    
   - blank trim
     
     ```
@@ -145,8 +145,8 @@ def convert(i):
 test.pt
 ```
 {% @extension('pytuils.py') %} 
-{% for i in range(1,3) %}
---{{i}}---{{i|convert(self)}}--
+{% for i in range(1,6) %}
+--{{i}}---{{i|convert}}--
 {%endfor%}
 ```
 Execute the command **python pt test.pt** to get the following result:

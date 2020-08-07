@@ -250,6 +250,8 @@ class _PTCtx:
     if filters is not None:
       l['__pt_expr_self__'] = self._eval_expr(filters[0], g, l)
       for i in range(1, len(filters)):
+        if filters[i].token_count == 1 and callable(eval(filters[i].text, g, l)):
+          filters[i].expr_append_self()
         l['__pt_expr_self__'] = self._eval_expr(filters[i], g, l, )
       return l['__pt_expr_self__']
 
@@ -866,13 +868,6 @@ class _Block:
     return 0
 
   @property
-  def last_word(self):
-    if len(self._tokens) > 0:
-      return self._tokens[-1].text
-    else:
-      return ''
-
-  @property
   def remove_head_blank(self):
     return self._remove_head_blank
 
@@ -935,7 +930,6 @@ class _Block:
     self._expr_pos = pos
     return ret
 
-
   def expr_filters(self):
     filters = []
     self.expr_reset()
@@ -961,7 +955,6 @@ class _Block:
       raise SyntaxError('Too many expression after ?:')
     return (_Block(toks, 'expr'), _Block(toks_true, 'expr'), _Block(toks_false, 'expr'))
 
-
   def expr_subs(self):
     assert self._tokens[0].text in ['(', '[', '{'], 'The expression must starts with (, [ or {'
     assert self._tokens[-1].text == {'(':')', '[':']', '{':'}'}[self._tokens[0].text], 'The brackets must be matched'
@@ -983,6 +976,11 @@ class _Block:
     ret.insert(0, first)
     ret.append(last)
     return ret
+
+  def expr_append_self(self):
+    self._tokens.append(_Token('(', -1, -1))
+    self._tokens.append(_Token('self', -1, -1))
+    self._tokens.append(_Token(')', -1, -1))
 
 if __name__ == '__main__':
   for i in range(0, 5, -1):

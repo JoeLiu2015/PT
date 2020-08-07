@@ -239,7 +239,7 @@ ot starts with ha
     template = '''
 {% @extension('./pyutils.py') %}
 {% for i in range(1,10) %}
-{{i}}--filename-{{i|convert(self)}}
+{{i}}--filename-{{i|convert}}
 {%endfor%}'''
     ret = PT.eval(template)
     expect_ret = '''
@@ -360,7 +360,7 @@ End.
     self.assertEqual('13', PT.eval(expr, {'val': 7, 't': 6}))
 
   def test_expr_filter_custom_func(self):
-    expr = '''{{t|self+val|tt(self)}}'''
+    expr = '''{{t|self+val|tt}}'''
 
     def tt(v):
       return v*v
