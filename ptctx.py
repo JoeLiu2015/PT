@@ -8,6 +8,7 @@ class PT:
 Usage: python pt <template>
   -out  <output file>
   -args <python dictionary that define variables>
+  -json <argname=json file>
   -ext  <a single python file -or- a directory that contains python files>
   -log <0-ERROR(default) 1-INFO  2-DEBUG>      
 '''
@@ -40,6 +41,15 @@ Usage: python pt <template>
             ctx.output_file(val)
           elif option == '-args':
             ctx.variables(eval(val))
+          elif option == '-json':
+            pos = val.find('=')
+            if pos < 0:
+              raise SyntaxError('Can not find name separator "=" for in "%s".' % val)
+            name = val[0:pos].strip()
+            json_file = val[pos+1:].strip()
+            d = {}
+            d[name] = ptutil.data_json(json_file)
+            ctx.variables(d)
           elif option == '-ext':
             ctx.extension(val)
           elif option == '-log':
@@ -246,6 +256,7 @@ class _PTCtx:
   def _eval_expr(self, expr_block, gg, ll):
     g = gg.copy()
     l = ll.copy()
+    expr_block = expr_block.copy()
     filters = expr_block.expr_filters()
     if filters is not None:
       l['__pt_expr_self__'] = self._eval_expr(filters[0], g, l)
@@ -310,6 +321,8 @@ class _PTCtx:
       self._log(LOG_ERROR, 'Failed to eval expression: \'' + expr_txt + '\'')
 
   def _eval_prp(self, name, prp, g, l):
+    if prp in l or prp in g:
+      prp = eval(prp, g, l)
     try:
       val = eval(name, g, l)
     except NameError:
@@ -686,6 +699,10 @@ class _Token:
     else:
       self._type = ''
 
+  def copy(self):
+    t = _Token(self.text, self._line, self._offset)
+    t._type = self._type
+    return t
 
   def __str__(self):
     return self._text
@@ -882,6 +899,18 @@ class _Block:
   @remove_tail_blank.setter
   def remove_tail_blank(self, value):
     self._remove_tail_blank = value
+
+  def copy(self):
+    b = _Block([], self._type)
+    b._single_line_code  = self._single_line_code
+    b._code_offset       = self._code_offset
+    b._expr_pos          = self._expr_pos
+    b._remove_head_blank = self._remove_head_blank
+    b._remove_tail_blank = self._remove_tail_blank
+    for tok in self._tokens:
+      b._tokens.append(tok.copy())
+    return b
+
 
   def trim_blank(self, length):
     assert length >= 0, 'length must be positive (>0).'
