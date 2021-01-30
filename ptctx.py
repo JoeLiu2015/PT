@@ -1010,7 +1010,3 @@ class _Block:
     self._tokens.append(_Token('(', -1, -1))
     self._tokens.append(_Token('self', -1, -1))
     self._tokens.append(_Token(')', -1, -1))
-
-if __name__ == '__main__':
-  for i in range(0, 5, -1):
-    print(i)
