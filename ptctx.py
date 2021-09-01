@@ -44,11 +44,20 @@ Usage: python pt <template>
           elif option == '-json':
             pos = val.find('=')
             if pos < 0:
-              raise SyntaxError('Can not find name separator "=" for in "%s".' % val)
+              raise SyntaxError('Can not find name separator "=" in "%s".' % val)
             name = val[0:pos].strip()
             json_file = val[pos+1:].strip()
             d = {}
             d[name] = ptutil.data_json(json_file)
+            ctx.variables(d)
+          elif option == '-xml':
+            pos = val.find('=')
+            if pos < 0:
+              raise SyntaxError('Can not find name separator "=" in "%s".' % val)
+            name = val[0:pos].strip()
+            xml_file = val[pos+1:].strip()
+            d = {}
+            d[name] = ptutil.data_xml(xml_file)
             ctx.variables(d)
           elif option == '-ext':
             ctx.extension(val)

@@ -110,21 +110,20 @@ def data_xml(xml_input):
 
 def _xml2Dic(element):
   ret = OrderedDict([])
-  ret['name']  = element.tagName
-  ret['attrs'] = OrderedDict([])
-  ret['childs']= []
-  ret['text']  = None
+  setattr(ret, 'tag',    element.tagName)
+  setattr(ret, 'childs', [])
+  setattr(ret, 'text',   None)
 
   for key, val in element.attributes.items():
-    ret['attrs'][key] = val
+    setattr(ret, key, val)
 
   txt = ''
   for child in element.childNodes:
     if isinstance(child, xml.dom.minidom.Element):
-      ret['childs'].append(_xml2Dic(child))
+      ret.childs.append(_xml2Dic(child))
     elif isinstance(child, xml.dom.minidom.Text):
       txt += child.wholeText
 
-  if len(ret['childs']) == 0:
-    ret['text'] = txt
+  if len(ret.childs) == 0:
+    ret.text = txt
   return ret
