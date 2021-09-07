@@ -9,6 +9,7 @@ Usage: python pt <template>
   -out  <output file>
   -args <python dictionary that define variables>
   -json <argname=json file>
+  -xml  <argname=xml file>
   -ext  <a single python file -or- a directory that contains python files>
   -log <0-ERROR(default) 1-INFO  2-DEBUG>      
 '''
@@ -330,8 +331,8 @@ class _PTCtx:
       self._log(LOG_ERROR, 'Failed to eval expression: \'' + expr_txt + '\'')
 
   def _eval_prp(self, name, prp, g, l):
-    if prp in l or prp in g:
-      prp = eval(prp, g, l)
+    #if prp in l or prp in g:   # support the property name is a variable but not a string.
+    #  prp = eval(prp, g, l)
     try:
       val = eval(name, g, l)
     except NameError:
