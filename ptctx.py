@@ -176,12 +176,12 @@ class _PTCtx:
     self._log(LOG_DEBUG, 'Extension file \'' + real_path + '\'')
     if ptutil.file_exists(real_path) and real_path.endswith('.py'):
       with open(real_path, 'rb') as fh:
-        exec(fh.read(), self._g, self._l)
+        exec(fh.read(), self._g)
     elif ptutil.path_exists(real_path):
       fs = ptutil.path_files(real_path, '*.py')
       for f in fs:
         with open(f, 'rb') as fh:
-          exec(fh.read(), self._g, self._l)
+          exec(fh.read(), self._g)
     else:
       self._log(LOG_ERROR, 'Invalid extension \'' + real_path + '\'')
 
