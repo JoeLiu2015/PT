@@ -11,7 +11,7 @@ Usage: python pt <template>
   -json <argname=json file>
   -xml  <argname=xml file>
   -ext  <a single python file -or- a directory that contains python files>
-  -log <0-ERROR(default) 1-INFO  2-DEBUG>      
+  -log  <0-ERROR(default) 1-INFO  2-DEBUG>      
 '''
 
     try:
@@ -139,9 +139,25 @@ class _PTCtx:
 
   def eval(self):
     self._translate()
-    self._log(LOG_DEBUG, '======Code=====\r\n' + self._code)
+    self._log(LOG_DEBUG, '======Code=====\r\n' + self.add_line_NO(self._code))
     exec(self._code, self._g, self._l)
     return self._output
+
+  def add_line_NO(self, code):
+    code = code.replace('\r\n', '\n').replace('\r', '\n')
+    lines = code.split('\n')
+    for i in range(len(lines)):
+      stri = str(i+1)
+      if len(stri) == 1:
+        stri += '    '
+      elif len(stri) == 2:
+        stri += '   '
+      elif len(stri) == 3:
+        stri += '  '
+      elif len(stri) == 4:
+        stri += ' '
+      lines[i] = stri + lines[i]
+    return os.linesep.join(lines)
 
   def output(self, str):
     if self._parent is not None:
