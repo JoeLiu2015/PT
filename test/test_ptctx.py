@@ -396,7 +396,145 @@ End.
     self.assertEqual(t.next_tok().text, 'a')
     self.assertEqual(t.next_tok().text, ' \t')
 
+  def test_blanks1(self):
+    template = '''
+{% if False %}x{% endif -%}
+test
+'''
+    ret = PT.eval(template, debug=True)
+    expect_ret = '''
+test
+'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks2(self):
+    template = '''
+{% if True %}x{% endif %}
+test
+'''
+    ret = PT.eval(template)
+    expect_ret = '''
+x
+test
+'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks3(self):
+    template = '''
+    {% if False %}            
+x
+{% endif %}
+test
+'''
+    ret = PT.eval(template)
+    expect_ret = '''
+test
+'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks4(self):
+    template = '''
+    {% if True %}  
+x
+{% endif %}
+test
+'''
+    ret = PT.eval(template)
+    expect_ret = '''
+x
+test
+'''
+    self.assertEqual(ret, expect_ret)
 
 
+  def test_blanks5(self):
+    template = '''  {% if False %}  
+  x
+  {% endif %}  
 
+test
+'''
+    ret = PT.eval(template)
+    expect_ret = '''
+test
+'''
+    self.assertEqual(ret, expect_ret)
 
+  def test_blanks6(self):
+    template = '''  {% if True %}  
+  x
+  {% endif %}   
+
+test
+'''
+    ret = PT.eval(template)
+    expect_ret = '''  x
+
+test
+'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks7(self):
+    template = '''{% if False %}  x  
+    {% endif %}    test'''
+    ret = PT.eval(template)
+    expect_ret = '''    test'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks8(self):
+    template = '''{% if True %}  x  
+{% endif %}    test'''
+    ret = PT.eval(template)
+    expect_ret = '''  x  
+    test'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks9(self):
+    template = '''test {% if False %}  x  
+ {% endif %}    test'''
+    ret = PT.eval(template)
+    expect_ret = '''test     test'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks10(self):
+    template = '''test {% if True %}  x  
+ {% endif %}    test'''
+    ret = PT.eval(template)
+    expect_ret = '''test   x  
+     test'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks11(self):
+    template = ''' {% if False %}  x  {% endif %}    test'''
+    ret = PT.eval(template)
+    expect_ret = '''     test'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks12(self):
+    template = ''' {% if True %}  x  {% endif %}    test'''
+    ret = PT.eval(template)
+    expect_ret = '''   x      test'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks13(self):
+    template = ''' {% if True %}     {% if False %}  x
+ {% endif %} 
+{% endif %}
+
+test'''
+    ret = PT.eval(template)
+    expect_ret = '''      
+test'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks14(self):
+    template = ''' {% if True %}     {% if False %}
+  x
+{% endif %} 
+{% endif %}
+
+test'''
+    ret = PT.eval(template)
+    expect_ret = '''      
+test'''
+    self.assertEqual(ret, expect_ret)

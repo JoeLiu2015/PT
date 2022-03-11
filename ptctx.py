@@ -1,6 +1,10 @@
 import os
 import ptutil
 
+LOG_ERROR = 0
+LOG_INFO  = 1
+LOG_DEBUG = 2
+
 class PT:
   @staticmethod
   def execute(argv):
@@ -74,13 +78,13 @@ Usage: python pt <template>
       print(usage)
 
   @staticmethod
-  def eval(template, args={}, output_file=None):
+  def eval(template, args={}, output_file=None, debug=False):
     ctx = _PTCtx(template, args, output_file)
+    if debug:
+      ctx.log_level = LOG_DEBUG
     return ctx.eval()
 
-LOG_ERROR = 0
-LOG_INFO  = 1
-LOG_DEBUG = 2
+
 class _PTCtx:
   def __init__(self, template, args={}, output_file=None):
     self._template = template
@@ -134,6 +138,11 @@ class _PTCtx:
       except Exception as ex:
         self._log(LOG_ERROR, 'File to open file "' + real_file + '": ' + str(ex))
 
+  @property
+  def log_level(self):
+    return self._log_level
+
+  @log_level.setter
   def log_level(self, val):
     self._log_level = val
 
@@ -208,6 +217,8 @@ class _PTCtx:
         self._exprs[line.text] = line  # Cache the expression, it will be used when eval the expression
         self._on_expr_(line.text)
       elif line.type == 'code':
+        if line.is_blank:
+          continue
         code = line.text
         if line.is_single_line_code:
           first_word = line.first_word
@@ -384,7 +395,7 @@ class Tokenizer:
     self._pos = 0
     self._end = len(self._text)
 
-    self._lines = []
+    self._lines = None
     self._state = 'text'
     self._code_offset = 0
 
@@ -528,47 +539,83 @@ class Tokenizer:
     self._offset = self._offset + len(tok)
     return _Token(tok, line, offset)
 
-  def next_line(self):
-    while len(self._lines) == 0:
+  def _init_lines(self):
+    self._lines = []
+    while True:
       if self._state == 'text':
         line = self._next_text_line()
+        if line is None:
+          break
         # 1. Ignore the empty line(0 tokens)
-        if line is not None and line.is_empty:
-          pass
-        # 2. Ignore the leading blank of the code block or expr block
-        elif line is not None and line.is_blank:
-          if self._state == 'code':
-            pass
-          elif self._state == 'expr':
-            expr_block = self._parse_expr()
-            if not expr_block.remove_head_blank:
-              self._lines.append(line)
-            self._lines.append(expr_block)
-          else:
-            self._lines.append(line)
-        else:
-          self._lines.append(line)
+        if line.is_empty:
+          continue
+        self._lines.append(line)
       elif self._state == 'code':
         self._parse_code_lines()
-        text = self._next_text_line()
-        # Ignore the trailing blank of the code block
-        if text is not None and text.is_blank:
-          pass
-        else:
-          self._lines.append(text)
       elif self._state == 'expr':
         expr_block = self._parse_expr()
         self._lines.append(expr_block)
-        if expr_block.remove_tail_blank:
-          text = self._next_text_line()
-          # Ignore the trailing blank of the expr block
-          if text is not None and text.is_blank:
-            pass
-          else:
-            self._lines.append(text)
       else:
         raise AssertionError("Impossible go here")
-    return self._lines.pop(0)
+    line_count = len(self._lines)
+    i = 0
+    while i < line_count:
+      if self._lines[i].type == 'code' or self._lines[i].type == 'expr':
+        i = self._remove_blank_line(i, line_count)
+      else:
+        i += 1
+
+  def _remove_blank_line(self, i, line_count):
+    retI = i+1
+    line = self._lines[i]
+    pre_line  = self._lines[i-1] if i > 0 else None
+    next_line = self._lines[retI] if retI < line_count else None
+    last_code = line
+
+    # for multiple lines code, skip all code lines
+    if line.type == 'code':
+      while next_line is not None and next_line.type == "code":
+        retI += 1
+        last_code = next_line
+        next_line = self._lines[retI] if retI < line_count else None
+
+    if line.remove_head_blank == '' or line.remove_tail_blank == '':
+      pre = pre_line
+      if pre_line is not None and pre_line.is_blank:
+        pre = self._lines[i-2] if i > 1 else None
+      next = next_line
+      if next_line is not None and next_line.is_blank:
+        next = self._lines[retI+1] if retI+1 < line_count else None
+      if (pre is None or pre.line_begin < line.line_begin) and (next is None or next.line_begin > line.line_end):
+        if line.remove_head_blank == '':
+          if pre_line is not None and pre_line.line_begin == line.line_begin and pre_line.is_blank:
+            line.remove_head_blank = '-'
+          else:
+            line.remove_head_blank = '+'
+        if line.remove_tail_blank == '':
+          if next_line is not None and next_line.line_begin == last_code.line_end and next_line.is_blank:
+            line.remove_tail_blank = '-'
+          else:
+            line.remove_tail_blank = '+'
+
+    if line.remove_head_blank == '-' and pre_line is not None and pre_line.is_blank and pre_line.line_begin == line.line_begin:
+      self._lines[i-1] = None
+    if line.remove_tail_blank == '-' and next_line is not None and next_line.is_blank and next_line.line_begin == last_code.line_end:
+      self._lines[retI] = None
+      retI += 1
+
+    return retI
+
+
+
+  def next_line(self):
+    if self._lines is None:
+      self._init_lines()
+    while len(self._lines) > 0:
+      if self._lines[0] is None:
+        self._lines.pop(0)
+        continue
+      return self._lines.pop(0)
 
 
   def _next_text_line(self):
@@ -596,17 +643,28 @@ class Tokenizer:
     lines = []
     line = []
     first_tok, min_blank_len = None, -1
+    pre_tok = None
+    tok = None
+    rm_head_blank = ''
+    rm_tail_blank = ''
 
     # 1. Parse code into lines
     while True:
+      pre_tok = tok
       tok = self.next_tok(custom_toks=['%}'])
       if tok is None or tok.text == '%}':
+        if pre_tok is not None and pre_tok.text in ['-', '+']:
+          rm_tail_blank = pre_tok.text
         self._state = 'text'
         break
 
       # Append blank token at the first code line
       if first_tok is None:
         first_tok = tok
+        if tok.text in ['-', '+']:
+          rm_head_blank = tok.text
+          tok.text = ' '
+
         if first_tok.offset > 0:
           if first_tok.is_blank:
             tok = _Token(' ' * first_tok.offset + tok.text, tok.line, 0)
@@ -620,6 +678,14 @@ class Tokenizer:
     if len(line) > 0:
       line_block = _Block(line, 'code')
       lines.append(line_block)
+    else:
+      # the line only has "%}", insert a blank for it, so that we can remove CRLF correctly
+      line.append(_Token(' ', tok.line, tok.offset))
+      lines.append(_Block(line, 'code'))
+
+    if len(lines) > 0:
+      lines[0].remove_head_blank = rm_head_blank
+      lines[0].remove_tail_blank = rm_tail_blank
 
     # 2. Trim leading blanks for every code line
     min_blank_len = 0xFFFF
@@ -638,6 +704,7 @@ class Tokenizer:
     is_single_line = (len(lines) - blank_line_count) == 1
     for line in lines:
       if line.is_blank:
+        self._lines.append(line)
         continue
       line.trim_blank(min_blank_len)
       if is_single_line:
@@ -665,13 +732,13 @@ class Tokenizer:
       else:
         toks.append(tok)
     # remove blank identify
-    rm_head_blank = False
-    rm_tail_blank = False
+    rm_head_blank = '+'
+    rm_tail_blank = '+'
     if len(toks) > 0 and toks[0].text == '-':
-      rm_head_blank = True
+      rm_head_blank = toks[0].text
       toks.pop(0)
     if len(toks) > 0 and toks[-1].text == '-':
-      rm_tail_blank = True
+      rm_tail_blank = toks[-1].text
       toks.pop(-1)
 
     # remove empty blank
@@ -788,11 +855,11 @@ class _Block:
     self._single_line_code = False
     self._code_offset = 0
     self._expr_pos = 0
-    self._remove_head_blank = False
-    self._remove_tail_blank = False
+    self._remove_head_blank = ''
+    self._remove_tail_blank = ''
 
   def __str__(self):
-    return self.text
+    return '[' + self.type + ']' + '“' + self.text + '“'
 
   @property
   def type(self):
