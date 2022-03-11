@@ -67,7 +67,7 @@ Usage: python pt <template>
           elif option == '-ext':
             ctx.extension(val)
           elif option == '-log':
-            ctx.log_level(int(val))
+            ctx.log_level = int(val)
           else:
             raise SyntaxError('Invalid option "%s".' % option)
       out_text = ctx.eval()
