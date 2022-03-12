@@ -680,6 +680,7 @@ class Tokenizer:
         if tok.text in ['-', '+']:
           rm_head_blank = tok.text
           tok.text = ' '
+          tok.type = 'blank'
 
         if first_tok.offset > 0:
           if first_tok.is_blank:
@@ -1020,6 +1021,10 @@ class _Block:
     elif blen > length:
       tok0 = self._tokens[0]
       self._tokens[0] = _Token(' ' * (blen - length), tok0.line, tok0.offset + length)
+
+  def trim_leading_blank(self):
+    assert self._type == 'text', 'trim_leading_blank is only used on text'
+    # TODO:
 
   def expr_reset(self):
     self._expr_pos = 0
