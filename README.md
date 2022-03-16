@@ -36,6 +36,8 @@ python pt page.pt -out page.html -args "{'page': {'title': 'Test Page', 'body': 
 Usage: python pt <template>
   -out  <output file>
   -args <python dictionary that define variables>
+  -json <argname=json file>
+  -xml  <argname=xml file>
   -ext  <a single python file -or- a directory that contains python files>
   -log  <0-ERROR(default) 1-INFO  2-DEBUG> 
 ```
