@@ -249,7 +249,10 @@ ot starts with ha
     index = './templates/index.html'
     self.assertTrue(ptutil.file_exists(index))
     self.assertTrue(ptutil.file_read(index), expect_index)
+    for i in range(1, 10):
+      self.assertTrue(ptutil.file_exists('./templates/pages/page%d.html' % i))
     ptutil.file_delete(index)
+    ptutil.path_delete('/templates/pages')
 
     for i in range(1, 11):
       filename = './templates/pages/page' + str(i) + '.html'

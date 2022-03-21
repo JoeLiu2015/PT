@@ -43,7 +43,7 @@ Usage: python pt <template>
           val = argv[i + 1]
 
           if option == '-out':
-            ctx.output_file(val)
+            ctx.output_file(val, True)
           elif option == '-args':
             ctx.variables(eval(val))
           elif option == '-json':
@@ -65,7 +65,7 @@ Usage: python pt <template>
             d[name] = ptutil.data_xml(xml_file)
             ctx.variables(d)
           elif option == '-ext':
-            ctx.extension(val)
+            ctx.extension(val, True)
           elif option == '-log':
             ctx.log_level = int(val)
           else:
@@ -124,7 +124,7 @@ class _PTCtx:
     assert type(vars) is dict, 'The variables must be a dictionary.'
     self._l.update(vars)
 
-  def output_file(self, file):
+  def output_file(self, file, ignore_template=False):
     if self._output_file_hd is not None:
       self._output_file_hd.close()
       self._output_file_hd = None
@@ -132,7 +132,7 @@ class _PTCtx:
     self._output_file = file
     self._output_file_hd = None
     if self._output_file is not None and self._output_file != '':
-      real_file = self._absolute_file(self._output_file)
+      real_file = self._absolute_file(self._output_file, ignore_template)
       try:
         self._output_file_hd = ptutil.file_openw(real_file)
       except Exception as ex:
@@ -196,17 +196,23 @@ class _PTCtx:
     ret = self._eval_expr(expr, self._g, self._l)
     self.output(str(ret))
 
-  def extension(self, py_file):
-    real_path = self._absolute_file(py_file)
+  def extension(self, py_file, ignore_template=False):
+    real_path = self._absolute_file(py_file, ignore_template)
     self._log(LOG_DEBUG, 'Extension file \'' + real_path + '\'')
     if ptutil.file_exists(real_path) and real_path.endswith('.py'):
       with open(real_path, 'rb') as fh:
-        exec(fh.read(), self._g)
+        try:
+          exec(fh.read(), self._g)
+        except Exception as ex:
+          self._log(LOG_ERROR, 'File to exec file "' + py_file + '": ' + str(ex))
     elif ptutil.path_exists(real_path):
       fs = ptutil.path_files(real_path, '*.py')
       for f in fs:
         with open(f, 'rb') as fh:
-          exec(fh.read(), self._g)
+          try:
+            exec(fh.read(), self._g)
+          except Exception as ex:
+            self._log(LOG_ERROR, 'File to exec file "' + f + '": ' + str(ex))
     else:
       self._log(LOG_ERROR, 'Invalid extension \'' + real_path + '\'')
 
@@ -278,8 +284,8 @@ class _PTCtx:
   def _on_code_(self, line):
     self._print_(self.TAB * self._depth + line)
 
-  def _absolute_file(self, file):
-    if os.path.isfile(self._template):
+  def _absolute_file(self, file, ignore_template=False):
+    if os.path.isfile(self._template) and not ignore_template:
       current_path = os.path.dirname(os.path.realpath(self._template))
     else:
       current_path = os.getcwd()
