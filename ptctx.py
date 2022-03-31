@@ -580,14 +580,18 @@ class Tokenizer:
       else:
         raise AssertionError("Impossible go here")
     line_count = len(self._lines)
+
     i = 0
+    empty_lines = []
     while i < line_count:
       if self._lines[i].type == 'code' or self._lines[i].type == 'expr':
-        i = self._remove_blank_line(i, line_count)
+        i = self._remove_blank_line(i, line_count, empty_lines)
       else:
         i += 1
+    for line_NO in empty_lines:
+      self._lines[line_NO] = None
 
-  def _remove_blank_line(self, i, line_count):
+  def _remove_blank_line(self, i, line_count, empty_lines):
     retI = i+1
     line = self._lines[i]
     pre_line  = self._lines[i-1] if i > 0 else None
@@ -615,15 +619,15 @@ class Tokenizer:
           else:
             line.remove_head_blank = '+'
         if line.remove_tail_blank == '':
-          if next_line is not None and next_line.line_begin == last_code.line_end and next_line.is_blank:
+          if next_line is not None and next_line.line_begin >= last_code.line_end and next_line.is_blank:
             line.remove_tail_blank = '-'
           else:
             line.remove_tail_blank = '+'
 
     if line.remove_head_blank == '-' and pre_line is not None and pre_line.is_blank and pre_line.line_begin == line.line_begin:
-      self._lines[i-1] = None
-    if line.remove_tail_blank == '-' and next_line is not None and next_line.is_blank and next_line.line_begin == last_code.line_end:
-      self._lines[retI] = None
+      empty_lines.append(i-1)
+    if line.remove_tail_blank == '-' and next_line is not None and next_line.is_blank and next_line.line_begin >= last_code.line_end:
+      empty_lines.append(retI)
       retI += 1
 
     return retI

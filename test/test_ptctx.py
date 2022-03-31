@@ -129,6 +129,30 @@ b
     print(ret)
     self.assertEqual(expect_ret, ret)
 
+  def test_PT_eval_comments(self):
+      template = '''
+  a  {%"""
+      test
+      """%}
+     {%for i in range(3)%}
+     test
+     {%endfor%}
+     {%"""
+      test
+      """%}
+  b
+      '''
+      expect_ret = '''
+  a  
+     test
+     test
+     test
+  b
+      '''
+      ret = PT.eval(template,debug=True)
+      print(ret)
+      self.assertEqual(expect_ret, ret)
+
   def test_expr(self):
     template = '''[
 {%for i in range(1,101)%}
