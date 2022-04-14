@@ -398,6 +398,50 @@ End.
 '''
     self.assertEqual(ret, expect_ret)
 
+  def test_indent(self):
+      template = '''
+{% test = True %}    
+{% if test %}
+if test == True {
+{% @indent+ %}   
+{% endif %}
+print('abc')
+{% if test %}
+{% @indent- %}
+}
+{% endif %}
+print('efg')
+'''
+      ret = PT.eval(template)
+      expect_ret = '''
+if test == True {
+  print('abc')
+}
+print('efg')
+'''
+      self.assertEqual(ret, expect_ret)
+
+  def test_indent1(self):
+    template = '''
+{% test = False %}    
+{% if test %}
+if test == True {
+{% @indent+ %}   
+{% endif %}
+print('abc')
+{% if test %}
+{% @indent- %}
+}
+{% endif %}
+print('efg')
+'''
+    ret = PT.eval(template)
+    expect_ret = '''
+print('abc')
+print('efg')
+'''
+    self.assertEqual(ret, expect_ret)
+
   def test_expr_ternary(self):
     expr = '''{{(i % 10 != 0) ? ',': '\\r\\n' }}'''
 

@@ -106,8 +106,8 @@ class _PTCtx:
     self._depth = 0
     self._exprs = {}
     self._parent = None
-    self._parent_indent = ''
-    self._parent_indent_output = True
+    self._output_indent = True
+    self._indent = ''
     self._log_level = 0  # 0-ERROR 1-INFO 2-DEBUG
 
   @property
@@ -169,27 +169,21 @@ class _PTCtx:
     return os.linesep.join(lines)
 
   def output(self, str):
-    if self._parent is not None:
-      if self._parent_indent != '':
-        if self._parent_indent_output:
-          self._parent.output(self._parent_indent)
-          self._parent_indent_output = False
-        if str.endswith('\n'):
-          str = str[0:-1]
-          self._parent_indent_output = True
-        if str.find('\n') >= 0:
-          str = str.replace('\n', '\n' + self._parent_indent)
-        if self._parent_indent_output:
-          str = str + '\n'
-        self._parent.output(str)
-      else:
-        self._parent.output(str)
-      return
-
-    if self._output_file_hd is not None:
-      self._output_file_hd.write(str)
+    indent = self.indent_str()
+    if indent != '':
+      if self._output_indent:
+        self.output_raw(indent)
+        self._output_indent = False
+      if str.endswith('\n'):
+        str = str[0:-1]
+        self._output_indent = True
+      if str.find('\n') >= 0:
+        str = str.replace('\n', '\n' + indent)
+      if self._output_indent:
+        str = str + '\n'
+      self.output_raw(str)
     else:
-      self._output += str
+      self.output_raw(str)
 
   def output_exp(self, exp_str):
     expr = self._exprs[exp_str]
@@ -221,8 +215,30 @@ class _PTCtx:
     real_path = self._absolute_file(pt_file)
     ctx = _PTCtx(real_path, args, None)
     ctx._parent = self
-    ctx._parent_indent = ' ' * offset
+    ctx._indent = ' ' * offset
     ctx.eval()
+
+  def add_indent(self):
+    self._indent += '  '
+
+  def remove_indent(self):
+    if len(self._indent) >= 2:
+      self._indent = self._indent[0:-2]
+
+  def indent_str(self):
+    if self._parent is not None:
+      return self._parent.indent_str() + self._indent
+    else:
+      return self._indent
+
+  def output_raw(self, str):
+    if self._parent is not None:
+      self._parent.output_raw(str)
+    else:
+      if self._output_file_hd is not None:
+        self._output_file_hd.write(str)
+      else:
+        self._output += str
 
   def _translate(self):
     self._depth = 0
@@ -261,13 +277,17 @@ class _PTCtx:
               raise SyntaxError('\'' + first_word + '\' must match \'' + first_word[3:] + '\'')
             code_stack.pop(-1)
             self._depth -= 1
-          elif first_word in ['@include', '@output_file', '@extension']:
+          elif first_word in ['@include', '@output_file', '@extension', '@indent+', '@indent-']:
             out_code = 'ctx.' + code[1:] #remove @
             if first_word == '@include':
               out_code = out_code.rstrip(' \t')
               assert(out_code[-1] == ')')
               # Append line offset into the 'include' parameter list
               out_code = out_code[0:-1] + ', ' + str(line.code_offset) + ')'
+            elif first_word == '@indent+':
+              out_code = 'ctx.add_indent()'
+            elif first_word == '@indent-':
+              out_code = 'ctx.remove_indent()'
             self._on_code_(out_code)
           else:
             self._on_code_(code)
@@ -978,7 +998,10 @@ class _Block:
       if self._tokens[i].is_blank_or_newline:
         continue
       if self._tokens[i].text == '@' and i + 1 < tok_count and self._tokens[i + 1].is_name:
-        return self._tokens[i].text + self._tokens[i + 1].text
+        ret = self._tokens[i].text + self._tokens[i + 1].text
+        if i + 2 < tok_count and self._tokens[i + 2].text in ['+', '-']:
+          ret += self._tokens[i + 2].text
+        return ret
       else:
         return self._tokens[i].text
 
