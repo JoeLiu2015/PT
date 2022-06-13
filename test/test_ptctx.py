@@ -513,6 +513,28 @@ test
 '''
     self.assertEqual(ret, expect_ret)
 
+  def test_blanks2_1(self):
+    template = '''
+{% if True %}x{% endif -%}  
+test
+'''
+    ret = PT.eval(template)
+    expect_ret = '''
+xtest
+'''
+    self.assertEqual(ret, expect_ret)
+
+  def test_blanks2_2(self):
+    template = '''
+ {%- if True %}x{% endif -%}  
+test
+'''
+    ret = PT.eval(template)
+    expect_ret = '''
+xtest
+'''
+    self.assertEqual(ret, expect_ret)
+
   def test_blanks3(self):
     template = '''
     {% if False %}            
