@@ -65,6 +65,10 @@ The Built-in code must appear in the single line, the left and right blanks are 
 {% @include(templatefile, args) %} # The sub-template will be included into the current template
 
 {% @extension(py_file) %} # The py_file can be a single python file or a directory contains multiple python files
+
+{% @indent+ %} # Add indent to every line in the following output text
+
+{% @indent- %} # Remove the indent that added by {% @indent+ %}
 ```
 
 #### 3.2 Custome Code
