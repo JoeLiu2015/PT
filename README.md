@@ -262,5 +262,35 @@ pages\page9.html
 pages\page10.html    
 ```
 
-### 8. LICENSE
+### 8. Add indent/Remove indent
+The template can add/remove indent for the output text with command **@indent+**, **@indent-**
+
+#### Sample:
+indent_output.pt
+```
+{% if input['hasIf'] %}
+if condition {
+{% @indent+ %}
+{% endif %}
+fmt.println("test")
+{% if input['hasIf'] %}
+{% @indent- %}
+}
+{% endif %}  
+fmt.println("test")
+```
+Execute the command **python pt indent_output.pt -args "{'input': {'hasIf': True}}"** to get the following result:
+```
+if condition {
+  fmt.println("test")
+}
+fmt.println("test")
+```
+Execute the command **python pt indent_output.pt -args "{'input': {'hasIf': False}}"** to get the following result:
+```
+fmt.println("test")
+fmt.println("test")  
+```
+
+### 9. LICENSE
 Apache-2.0 License

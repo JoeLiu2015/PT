@@ -640,3 +640,32 @@ test'''
     expect_ret = '''      
 test'''
     self.assertEqual(ret, expect_ret)
+
+  def test_indent(self):
+    template = '''
+{% if input['hasIf'] %}
+if condition {
+{% @indent+ %}
+{% endif %}
+fmt.println("test")
+{% if input['hasIf'] %}
+{% @indent- %}
+}
+{% endif %}  
+fmt.println("test")
+'''
+    ret = PT.eval(template, args={'input': {'hasIf': True}}, debug=True)
+    expect_ret = '''
+if condition {
+  fmt.println("test")
+}
+fmt.println("test")
+'''
+    self.assertEqual(ret, expect_ret)
+
+    ret = PT.eval(template, args={'input': {'hasIf': False}}, debug=True)
+    expect_ret = '''
+fmt.println("test")
+fmt.println("test")
+'''
+    self.assertEqual(ret, expect_ret)
