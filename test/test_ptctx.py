@@ -691,3 +691,16 @@ fmt.println("test")
 fmt.println("test")
 '''
     self.assertEqual(ret, expect_ret)
+
+
+  def test_recursive_func(self):
+    template = '''{%    
+def get_groups(val):
+  if val == 1:
+    return 1
+  else:
+    return get_groups(val -1) + val
+%}
+{{- get_groups(5)}}'''
+    ret = PT.eval(template)
+    self.assertEqual(ret, "15")

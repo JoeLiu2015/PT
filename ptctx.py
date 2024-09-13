@@ -149,7 +149,8 @@ class _PTCtx:
   def eval(self):
     self._translate()
     self._log(LOG_DEBUG, '======Code=====\r\n' + self.add_line_NO(self._code))
-    exec(self._code, self._g, self._l)
+    self._g.update(self._l)
+    exec(self._code, self._g)
     return self._output
 
   def add_line_NO(self, code):
@@ -263,7 +264,7 @@ class _PTCtx:
           if first_word in ['for', 'if', 'while']:
             code_stack.append(line)
             if not code.endswith(':'): code += ':'
-            self._on_code_(code)
+            self._on_code_(code.lstrip())
             self._depth += 1
           elif first_word in ['elif', 'else']:
             if len(code_stack) == 0 or code_stack[-1].first_word != 'if':

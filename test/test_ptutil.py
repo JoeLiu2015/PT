@@ -76,16 +76,21 @@ class test_ptutil(unittest.TestCase):
         <node>
           i'm joe
         </node>
+        <child a="a">child text</child>
       </joe>
       '''
     m = data_xml(input)
-    self.assertEqual(m.attr1, 'abc')
-    self.assertEqual(m.attr2, '3')
-    self.assertEqual(m.attr4, 'true')
-    self.assertEqual(m.node[0].n, 'aaa')
-    self.assertEqual(m.node[0].m, 'bbb')
+    self.assertEqual(m.tag, 'joe')
+    self.assertEqual(m.attrs['attr1'], 'abc')
+    self.assertEqual(m.attrs['attr2'], '3')
+    self.assertEqual(m.attrs['attr4'], 'true')
+    self.assertEqual(m.node[0].attrs['n'], 'aaa')
+    self.assertEqual(m.node[0].attrs['m'], 'bbb')
     self.assertEqual(m.node[0].text, 'this is test')
     self.assertEqual(m.node[1].text.strip(), 'i\'m joe')
+    self.assertEqual(m.child.attrs['a'], 'a')
+    self.assertEqual(m.child.text, 'child text')
+    self.assertEqual(m.childs[2].text, 'child text')
 
   def test_data_json(self):
     input = '''

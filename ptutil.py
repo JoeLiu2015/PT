@@ -109,26 +109,34 @@ def data_xml(xml_input):
 
 
 def _xml2Dic(element):
-  ret = OrderedDict([])
+  ret = OrderedDict()
+  childs = []
+  attrs  = OrderedDict()
   setattr(ret, 'tag',    element.tagName)
+  setattr(ret, 'attrs',  attrs)
   setattr(ret, 'text',   None)
+  setattr(ret, 'childs', childs)
 
   for key, val in element.attributes.items():
-    setattr(ret, key, val)
+    attrs[key] = val
 
-  has_child = False
   txt = ''
   for child in element.childNodes:
     if isinstance(child, xml.dom.minidom.Element):
-      has_child = True
       child = _xml2Dic(child)
-      if hasattr(ret, child.tag):
-        getattr(ret, child.tag).append(child)
+      childs.append(child)
+      child_name = child.tag
+      if hasattr(ret, child_name):
+        child_obj = getattr(ret, child_name)
+        if isinstance(child_obj, OrderedDict):
+          setattr(ret, child_name, [child_obj, child])
+        else:
+          child_obj.append(child)
       else:
-        setattr(ret, child.tag, [child])
+        setattr(ret, child_name, child)
     elif isinstance(child, xml.dom.minidom.Text):
       txt += child.wholeText
 
-  if not has_child:
+  if len(childs) == 0:
     ret.text = txt
   return ret
