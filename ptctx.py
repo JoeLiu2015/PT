@@ -262,10 +262,14 @@ class _PTCtx:
         if line.is_single_line_code:
           first_word = line.first_word
           if first_word in ['for', 'if', 'while']:
+            if first_word == 'for':
+              self._on_code_(f'{line.words[1]}_idx = -1')
             code_stack.append(line)
             if not code.endswith(':'): code += ':'
             self._on_code_(code.lstrip())
             self._depth += 1
+            if first_word == 'for':
+              self._on_code_(f'{line.words[1]}_idx += 1')
           elif first_word in ['elif', 'else']:
             if len(code_stack) == 0 or code_stack[-1].first_word != 'if':
               raise SyntaxError('\'' + first_word + '\' must match \'if\'')
@@ -998,6 +1002,7 @@ class _Block:
     for i in range(0, tok_count):
       if self._tokens[i].is_blank_or_newline:
         continue
+      # @indent+, @indent-
       if self._tokens[i].text == '@' and i + 1 < tok_count and self._tokens[i + 1].is_name:
         ret = self._tokens[i].text + self._tokens[i + 1].text
         if i + 2 < tok_count and self._tokens[i + 2].text in ['+', '-']:
@@ -1005,6 +1010,17 @@ class _Block:
         return ret
       else:
         return self._tokens[i].text
+
+  @property
+  def words(self):
+    ret = []
+    tok_count = len(self._tokens)
+    for i in range(0, tok_count):
+      if self._tokens[i].is_blank_or_newline:
+        continue
+      else:
+        ret.append(self._tokens[i].text)
+    return ret
 
   @property
   def blank_len(self):

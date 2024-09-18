@@ -49,7 +49,8 @@ The code block is starts with '{%' and ends of '%}'. There are two kinds of code
 The Built-in code must appear in the single line, the left and right blanks are ignored.
 
 ```
-{% for var-list in var %}
+{% for var in var-list %}
+# in the loop, the built-in variable 'var_idx'(0-based) can be used in the template
 {% endfor %}
 
 {% while conditional-expression %}
