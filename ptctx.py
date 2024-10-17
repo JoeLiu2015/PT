@@ -322,7 +322,7 @@ class _PTCtx:
     self._code += code
 
   def _eval_expr(self, expr_block, gg, ll):
-    g = gg.copy()
+    g = gg
     l = ll.copy()
     expr_block = expr_block.copy()
     filters = expr_block.expr_filters()
