@@ -157,15 +157,7 @@ class _PTCtx:
     code = code.replace('\r\n', '\n').replace('\r', '\n')
     lines = code.split('\n')
     for i in range(len(lines)):
-      stri = str(i+1)
-      if len(stri) == 1:
-        stri += '    '
-      elif len(stri) == 2:
-        stri += '   '
-      elif len(stri) == 3:
-        stri += '  '
-      elif len(stri) == 4:
-        stri += ' '
+      stri = str(i+1).ljust(5)
       lines[i] = stri + lines[i]
     return os.linesep.join(lines)
 
