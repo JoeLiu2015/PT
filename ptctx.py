@@ -1,5 +1,6 @@
 import os
 import ptutil
+import inspect
 
 LOG_ERROR = 0
 LOG_INFO  = 1
@@ -30,6 +31,11 @@ Usage: python pt <template>
         print('ERROR: Can not find template file "' + template_file + '".')
         print(usage)
         return
+
+      # import all functions in ptutils into globals(), so they can be used in the template.
+      for fname, obj in inspect.getmembers(ptutil, inspect.isfunction):
+        if not fname.startswith('_'):
+          globals()[fname] = obj
 
       ctx = _PTCtx(template_file)
       if argc > 2:
