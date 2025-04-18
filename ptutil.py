@@ -99,6 +99,7 @@ def data_sqlite3_table(sql_file, sql_query):
     for row in execute_ret:
       ret.append(row)
     return ret
+
 def data_xml(xml_input):
   if file_exists(xml_input):
     domTree = xml.dom.minidom.parse(xml_input)
@@ -107,6 +108,108 @@ def data_xml(xml_input):
   element = domTree.documentElement
   return _xml2Dic(element)
 
+def data_yaml(yaml_input):
+  yaml = yaml_input
+  if file_exists(yaml_input):
+    yaml = file_read(yaml_input)
+
+  lines_tmp = yaml.splitlines()
+  lines = []
+  spaces = []
+  for line in lines_tmp:
+    if len(line.strip()) == 0 or line.strip().startswith('#'):
+      continue
+    lines.append(line)
+    spaces.append(len(line) - len(line.lstrip()))
+  return _parseYamlObj(lines, spaces)
+
+def _parseYamlObj(lines, spaces):
+  if len(lines) == 0:
+    return None
+
+  has_more_levels = False
+  for i in range(1, len(spaces)):
+    if spaces[i] != spaces[0]:
+      has_more_levels = True
+      break
+
+  if not has_more_levels:
+    if ':' in lines[0]:
+      obj = OrderedDict()
+      for line in lines:
+        if not ':' in line:
+          raise ValueError('invalid key:value line - ' + line)
+        key, value = line.split(':', 1)
+        obj[key.strip()] = value.strip()
+      return obj
+    elif lines[0].lstrip().startswith('-'):
+      obj = []
+      for line in lines:
+        if not line.lstrip().startswith('-'):
+          raise ValueError('invalid array item line - ' + line)
+        obj.append(line.strip()[1:])
+      return obj
+    else:
+      raise ValueError('invalid yaml line - ' + lines[0])
+
+  groups = OrderedDict()
+  level = spaces[0]
+  cnt = len(spaces)
+  i = 0
+  while i < cnt:
+    if i + 1 >= cnt:
+      groups[i] = None
+      i = i + 1
+      continue
+    if spaces[i+1] == level:
+      groups[i] = None
+      i = i + 1
+      continue
+    if spaces[i+1] > level:
+      n = i + 1
+      while n < cnt:
+        if spaces[n] == level:
+          break
+        elif spaces[n] < level:
+          raise ValueError('invalid array item line - ' + lines[n])
+        n = n + 1
+      groups[i] = (i + 1, n)
+      i = n
+      continue
+    raise ValueError('invalid array item line with wrong level - ' + lines[i+1])
+
+  if lines[0].lstrip().startswith('-'):
+    obj = []
+    for k, v in groups.items():
+      line = lines[k]
+      if not line.lstrip().startswith('-'):
+        raise ValueError('invalid array item line - ' + line)
+      if v is None:
+        obj.append(line.strip()[1:])
+      else:
+        if line.strip() == '-':
+          obj.append(_parseYamlObj(lines[v[0]:v[1]], spaces[v[0]:v[1]]))
+        else:
+          new_lines = lines[(v[0]-1):v[1]]
+          new_spaces = spaces[(v[0]-1):v[1]]
+          new_lines[0] = new_lines[0].replace('-', ' ', 1)
+          new_spaces[0] = len(new_lines[0]) - len(new_lines[0].lstrip())
+          obj.append(_parseYamlObj(new_lines, new_spaces))
+    return obj
+  elif ':' in lines[0]:
+    obj = OrderedDict()
+    for k, v in groups.items():
+      line = lines[k]
+      if not ':' in line:
+        raise ValueError('invalid key:value line - ' + line)
+      key, value = line.split(':', 1)
+      if v is None:
+        obj[key.strip()] = value.strip()
+      else:
+        obj[key.strip()] = _parseYamlObj(lines[v[0]:v[1]], spaces[v[0]:v[1]])
+    return obj
+  else:
+    raise ValueError('invalid yaml line - ' + lines[0])
 
 def _xml2Dic(element):
   ret = OrderedDict()
@@ -140,3 +243,15 @@ def _xml2Dic(element):
   if len(childs) == 0:
     ret.text = txt
   return ret
+
+if __name__ == '__main__':
+  m = data_yaml('C:\\Dev\\branches\\v24\\CoreSSHServer\\CoreSSHServer.yaml')
+  print(m)
+  m = data_yaml('C:\\Dev\\branches\\v24\\PKIProxy\\yaml\\PKIProxy.yaml')
+  print(m)
+  m = data_yaml('C:\\Dev\\branches\\v24\\PKIAgent\\PKIAgent.yaml')
+  print(m)
+  m = data_yaml('C:\\Dev\\branches\\v24\\DriveAzure\\DriveAzure.yaml')
+  print(m)
+  m = data_yaml('C:\\Dev\\branches\\v24\\\\code\\ChatEngine\\ChatEngine.yaml')
+  print(m)

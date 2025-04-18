@@ -15,6 +15,7 @@ Usage: python pt <template>
   -args <python dictionary that define variables>
   -json <argname=json file>
   -xml  <argname=xml file>
+  -yaml <argname=yaml file>
   -ext  <a single python file -or- a directory that contains python files>
   -log  <0-ERROR(default) 1-INFO  2-DEBUG>      
 '''
@@ -69,6 +70,15 @@ Usage: python pt <template>
             xml_file = val[pos+1:].strip()
             d = {}
             d[name] = ptutil.data_xml(xml_file)
+            ctx.variables(d)
+          elif option == '-yaml':
+            pos = val.find('=')
+            if pos < 0:
+              raise SyntaxError('Can not find name separator "=" in "%s".' % val)
+            name = val[0:pos].strip()
+            yaml_file = val[pos+1:].strip()
+            d = {}
+            d[name] = ptutil.data_yaml(yaml_file)
             ctx.variables(d)
           elif option == '-ext':
             ctx.extension(val, True)

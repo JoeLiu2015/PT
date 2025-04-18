@@ -38,6 +38,7 @@ Usage: python pt <template>
   -args <python dictionary that define variables>
   -json <argname=json file>
   -xml  <argname=xml file>
+  -yaml <argname=yaml file>
   -ext  <a single python file -or- a directory that contains python files>
   -log  <0-ERROR(default) 1-INFO  2-DEBUG> 
 ```
@@ -86,8 +87,22 @@ The Built-in code must appear in the single line, the left and right blanks are 
    '''
    %}
    
-3) Normal python code   
+3) Normal python code (single line or multiple lines)  
+   // single line code
+   {% println('This is a test') %}
+   
+   // multiple lines code, the functions may be used in pipes
    {%
+   def is_req(node):
+     return ('req' not in node.attrs) or (node.attrs['req'] == '1')
+     
+   def desc_to_name(desc):
+     desc = desc.replace('/', ' ').replace(',', ' ').replace('-', ' ').replace('&', ' ').replace('.', ' ')
+     words = desc.split(' ')
+     ret = ''
+     for w in words:
+       ret += w.capitalize()
+     return ret
      any python code
    %}
 ```
@@ -297,5 +312,19 @@ fmt.println("test")
 fmt.println("test")  
 ```
 
-### 9. LICENSE
+### 9. Data Source
+The template always has the data source to generate result. There are following ways to specify the data source for the template
+
+#### 9.1 -args \<python dictionary>
+
+
+#### 9.2 -json <argname=json file>
+
+
+#### 9.3 -xml  <argname=xml file>
+
+
+#### 9.4 -yaml <argname=yaml file>
+
+### 10. LICENSE
 Apache-2.0 License
