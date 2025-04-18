@@ -244,14 +244,3 @@ def _xml2Dic(element):
     ret.text = txt
   return ret
 
-if __name__ == '__main__':
-  m = data_yaml('C:\\Dev\\branches\\v24\\CoreSSHServer\\CoreSSHServer.yaml')
-  print(m)
-  m = data_yaml('C:\\Dev\\branches\\v24\\PKIProxy\\yaml\\PKIProxy.yaml')
-  print(m)
-  m = data_yaml('C:\\Dev\\branches\\v24\\PKIAgent\\PKIAgent.yaml')
-  print(m)
-  m = data_yaml('C:\\Dev\\branches\\v24\\DriveAzure\\DriveAzure.yaml')
-  print(m)
-  m = data_yaml('C:\\Dev\\branches\\v24\\\\code\\ChatEngine\\ChatEngine.yaml')
-  print(m)
