@@ -17,7 +17,7 @@ Usage: python pt <template>
   -xml  <argname=xml file>
   -yaml <argname=yaml file>
   -ext  <a single python file -or- a directory that contains python files>
-  -log  <0-ERROR(default) 1-INFO  2-DEBUG>      
+  -log  <0-ERROR 1-INFO(default)  2-DEBUG>      
 '''
 
     try:
@@ -124,7 +124,7 @@ class _PTCtx:
     self._parent = None
     self._output_indent = True
     self._indent = ''
-    self._log_level = 0  # 0-ERROR 1-INFO 2-DEBUG
+    self._log_level = 1  # 0-ERROR 1-INFO 2-DEBUG
 
   @property
   def code(self):
@@ -151,6 +151,7 @@ class _PTCtx:
       real_file = self._absolute_file(self._output_file, ignore_template)
       try:
         self._output_file_hd = ptutil.file_openw(real_file)
+        self._log(LOG_INFO, "Generate file: " + real_file)
       except Exception as ex:
         self._log(LOG_ERROR, 'File to open file "' + real_file + '": ' + str(ex))
 
