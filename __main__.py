@@ -4,7 +4,7 @@ import ptctx
 
 if __name__ == '__main__':
   # https://patorjk.com/software/taag/#p=display&f=Standard&t=PT%202.0
-  title =''' ____ _____   ____    ___  
+  title = r''' ____ _____   ____    ___  
 |  _ \_   _| |___ \  / _ \ 
 | |_) || |     __) || | | |
 |  __/ | |    / __/ | |_| |

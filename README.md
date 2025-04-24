@@ -36,6 +36,7 @@ python pt page.pt -out page.html -args "{'page': {'title': 'Test Page', 'body': 
 Usage: python pt <template>
   -out  <output file>
   -args <python dictionary that define variables>
+  -ini  <argname=ini file>
   -json <argname=json file>
   -xml  <argname=xml file>
   -yaml <argname=yaml file>
@@ -52,6 +53,10 @@ The Built-in code must appear in the single line, the left and right blanks are 
 ```
 {% for var in var-list %}
 # in the loop, the built-in variable 'var_idx'(0-based) can be used in the template
+{% endfor %}
+
+{% for key,val in var-dict %}
+# in the loop, the built-in variable 'key_idx'(0-based) can be used in the template
 {% endfor %}
 
 {% while conditional-expression %}
@@ -318,13 +323,16 @@ The template always has the data source to generate result. There are following 
 #### 9.1 -args \<python dictionary>
 
 
-#### 9.2 -json <argname=json file>
+#### 9.2 -ini  <argname=ini file>
 
 
-#### 9.3 -xml  <argname=xml file>
+#### 9.3 -json <argname=json file>
 
 
-#### 9.4 -yaml <argname=yaml file>
+#### 9.4 -xml  <argname=xml file>
+
+
+#### 9.5 -yaml <argname=yaml file>
 
 ### 10. LICENSE
 Apache-2.0 License

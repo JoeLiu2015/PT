@@ -13,6 +13,7 @@ class PT:
 Usage: python pt <template>
   -out  <output file>
   -args <python dictionary that define variables>
+  -ini  <argname=ini file>
   -json <argname=json file>
   -xml  <argname=xml file>
   -yaml <argname=yaml file>
@@ -53,6 +54,15 @@ Usage: python pt <template>
             ctx.output_file(val, True)
           elif option == '-args':
             ctx.variables(eval(val))
+          elif option == '-ini':
+            pos = val.find('=')
+            if pos < 0:
+              raise SyntaxError('Can not find name separator "=" in "%s".' % val)
+            name = val[0:pos].strip()
+            ini_file = val[pos+1:].strip()
+            d = {}
+            d[name] = ptutil.data_ini(ini_file)
+            ctx.variables(d)
           elif option == '-json':
             pos = val.find('=')
             if pos < 0:
