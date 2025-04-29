@@ -442,6 +442,55 @@ print('efg')
 '''
     self.assertEqual(ret, expect_ret)
 
+  # Known bug
+  def test_single_line_if(self):
+    template = '''
+    {% for i in range(10) %}    
+    {% if i % 2 == 0 %}-2-{% endif %}
+    {% if i % 2 == 1 %}-1-{% endif %}
+    {% endfor %}
+    '''
+    ret = PT.eval(template, debug=True)
+    print(ret)
+    expect_ret = '''
+    -2-
+    -1-
+    -2-
+    -1-
+    -2-
+    -1-
+    -2-
+    -1-
+    -2-
+    -1-
+    '''
+    self.assertEqual(ret, expect_ret)
+  def test_multi_line_if(self):
+    template = '''
+    {% for i in range(10) %}    
+    {% if i % 2 == 0 %}
+    -2-
+    {% endif %}
+    {% if i % 2 == 1 %}
+    -1-
+    {% endif %}
+    {% endfor %}
+    '''
+    ret = PT.eval(template)
+    print(ret)
+    expect_ret = '''
+    -2-
+    -1-
+    -2-
+    -1-
+    -2-
+    -1-
+    -2-
+    -1-
+    -2-
+    -1-
+    '''
+    self.assertEqual(ret, expect_ret)
   def test_expr_ternary(self):
     expr = '''{{(i % 10 != 0) ? ',': '\\r\\n' }}'''
 

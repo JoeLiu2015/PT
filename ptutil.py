@@ -79,12 +79,24 @@ def data_json(json_input):
 
 def data_ini(ini_input):
   ret = OrderedDict([])
+  no_section = False
   config = configparser.ConfigParser(inline_comment_prefixes=';')
   if file_exists(ini_input):
-    config.read_file(ini_input)
-  else:
+    ini_input = file_read(ini_input)
+  try:
     config.read_string(ini_input)
+  except configparser.Error as err:
+    if 'File contains no section headers' in err.message:
+      config.read_string('[_default_]\n' + ini_input)
+      no_section = True
+
+
   for sec_name in config.sections():
+    if no_section and sec_name == '_default_':
+      for opt_name, opt_val in config.items(sec_name):
+        ret[opt_name] = opt_val
+      continue
+
     sec = OrderedDict([])
     for opt_name, opt_val in config.items(sec_name):
       sec[opt_name] = opt_val
@@ -147,7 +159,7 @@ def _parseYamlObj(lines, spaces):
       for line in lines:
         if not line.lstrip().startswith('-'):
           raise ValueError('invalid array item line - ' + line)
-        obj.append(line.strip()[1:])
+        obj.append(line.lstrip()[1:].strip())
       return obj
     else:
       raise ValueError('invalid yaml line - ' + lines[0])

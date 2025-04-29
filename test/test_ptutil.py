@@ -121,6 +121,7 @@ a = 123
 b = ab
 c = ['a','b']
 d = {'aa':1,'bb':true,'cc':'haha'}
+e = a,b
  
 [sec2]
 e = 34
@@ -131,10 +132,80 @@ g = fsafdsa
     self.assertEqual(m['sec1']['a'], '123')
     self.assertEqual(m['sec1']['b'], 'ab')
     self.assertEqual(m['sec1']['c'], "['a','b']")
+    self.assertEqual(m['sec1']['e'], 'a,b')
     self.assertEqual(m['sec1']['d'], "{'aa':1,'bb':true,'cc':'haha'}")
     self.assertEqual(m['sec2']['e'], '34')
     self.assertEqual(m['sec2']['f'], 'ff')
     self.assertEqual(m['sec2']['g'], 'fsafdsa')
+
+  def test_data_ini_no_section(self):
+    input = '''
+  a = 123
+  b = ab
+  c = ['a','b']
+  d = {'aa':1,'bb':true,'cc':'haha'}
+  [sec2]
+  e = 34
+  f = ff
+  g = fsafdsa
+  '''
+    m = data_ini(input)
+    self.assertEqual(m['a'], '123')
+    self.assertEqual(m['b'], 'ab')
+    self.assertEqual(m['c'], "['a','b']")
+    self.assertEqual(m['d'], "{'aa':1,'bb':true,'cc':'haha'}")
+    self.assertEqual(m['sec2']['e'], '34')
+    self.assertEqual(m['sec2']['f'], 'ff')
+    self.assertEqual(m['sec2']['g'], 'fsafdsa')
+
+
+
+  def test_data_yaml(self):
+    input = '''
+openapi: 3.0.0
+info:
+  title: Test
+  version: '1.0'
+  description: 'desc'
+paths:
+  /path/path1/path2:
+    post:
+      summary: 'DoSomething'
+      description: 'DoSomething description.'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Data_Struct'
+        '400':
+          summary: '400 summary'
+components:
+  schemas:
+    Data_Struct:
+      type: object
+      properties:
+        serverStatus:
+          type: integer
+          description: "desc"
+          enum:
+            - 0 - ONE
+            - 1 - TWO
+        str:
+          type: string
+          description: "desc"
+        sessions:
+          type: array
+          items:
+            type: string
+  '''
+    m = data_yaml(input)
+    self.assertEqual(m['openapi'], '3.0.0')
+    self.assertEqual(m['info']['title'], 'Test')
+    self.assertEqual(m['info']['description'], "'desc'")
+    self.assertEqual(m['paths']['/path/path1/path2']['post']['responses']['\'200\'']['content']['application/json']['schema']['$ref'], "'#/components/schemas/Data_Struct'")
+    self.assertEqual(m['components']['schemas']['Data_Struct']['properties']['serverStatus']['enum'][0], '0 - ONE')
 
 
 if __name__ == '__main__':
