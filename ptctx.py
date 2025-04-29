@@ -405,7 +405,7 @@ class _PTCtx:
     try:
       return eval(expr_txt, g, l)
     except Exception as ex:
-      self._log(LOG_ERROR, 'Failed to eval expression: \'' + expr_txt + '\'')
+      self._log(LOG_ERROR, 'Failed to eval expression: \'' + expr_txt + '\' [' + repr(ex) + ']')
 
   def _eval_prp(self, name, prp, g, l):
     #if prp in l or prp in g:   # support the property name is a variable but not a string.

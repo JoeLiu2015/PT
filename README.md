@@ -55,7 +55,7 @@ The Built-in code must appear in the single line, the left and right blanks are 
 # in the loop, the built-in variable 'var_idx'(0-based) can be used in the template
 {% endfor %}
 
-{% for key,val in var-dict %}
+{% for key,val in var-dict.items() %}
 # in the loop, the built-in variable 'key_idx'(0-based) can be used in the template
 {% endfor %}
 
