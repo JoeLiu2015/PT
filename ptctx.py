@@ -617,7 +617,7 @@ class Tokenizer:
           continue
         self._lines.append(line)
       elif self._state == 'code':
-        self._parse_code_lines()
+        self._lines.extend(self._parse_code_lines())
       elif self._state == 'expr':
         expr_block = self._parse_expr()
         self._lines.append(expr_block)
@@ -625,6 +625,7 @@ class Tokenizer:
         raise AssertionError("Impossible go here")
     line_count = len(self._lines)
 
+    # remove some useless blanks at the start/end of the line
     i = 0
     empty_lines = []
     while i < line_count:
@@ -768,20 +769,19 @@ class Tokenizer:
       cur_len, first_word = line.blank_len, line.first_word
       # Ignore comments lines
       if first_word.startswith('#') or first_word.startswith('"""') or first_word.startswith("'''"):
-        cur_len = 0xFFFF
+        continue
       if cur_len < min_blank_len:
         min_blank_len = cur_len
 
     is_single_line = (len(lines) - blank_line_count) == 1
     for line in lines:
       if line.is_blank:
-        self._lines.append(line)
         continue
       line.trim_blank(min_blank_len)
       if is_single_line:
         line.is_single_line_code = True
         line.code_offset = self._code_offset
-      self._lines.append(line)
+    return lines
 
 
   def _parse_expr(self):
