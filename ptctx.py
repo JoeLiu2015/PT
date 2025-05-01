@@ -217,16 +217,18 @@ class _PTCtx:
       with open(real_path, 'rb') as fh:
         try:
           exec(fh.read(), self._g)
+          self._log(LOG_INFO, 'Extension file \'' + real_path + '\' load successfully.')
         except Exception as ex:
-          self._log(LOG_ERROR, 'File to exec file "' + py_file + '": ' + str(ex))
+          self._log(LOG_ERROR, 'Failed to load extension file "' + py_file + '": ' + str(ex))
     elif ptutil.path_exists(real_path):
       fs = ptutil.path_files(real_path, '*.py')
       for f in fs:
         with open(f, 'rb') as fh:
           try:
             exec(fh.read(), self._g)
+            self._log(LOG_INFO, 'Extension file \'' + f + '\' load successfully.')
           except Exception as ex:
-            self._log(LOG_ERROR, 'File to exec file "' + f + '": ' + str(ex))
+            self._log(LOG_ERROR, 'Failed to load extension file "' + f + '": ' + str(ex))
     else:
       self._log(LOG_ERROR, 'Invalid extension \'' + real_path + '\'')
 
@@ -833,23 +835,9 @@ class _Token:
     self._text = text
     self._line = line
     self._offset = offset
-    ch = self._text[0]
-    if '0' <= ch <= '9':
-      self._type = 'number'
-    elif ch in [' ', '\t']:
-      self._type = 'blank'
-    elif ch in '\r\n':
-      self._type = 'newline'
-    elif ch in ['\'', '"']:
-      self._type = 'string'
-    elif ch == '_' or ('a' <= ch <= 'z') or ('A' <= ch <= 'Z'):
-      self._type = 'name'
-    else:
-      self._type = ''
 
   def copy(self):
     t = _Token(self.text, self._line, self._offset)
-    t._type = self._type
     return t
 
   def __str__(self):
@@ -876,32 +864,29 @@ class _Token:
     return self._offset
 
   @property
-  def type(self):
-    return self._type
-
-  @type.setter
-  def type(self, val):
-    self._type = val
-
-  @property
   def is_number(self):
-    return self._type == 'number'
+    ch = self._text[0]
+    return '0' <= ch <= '9'
 
   @property
   def is_name(self):
-    return self._type == 'name'
+    ch = self._text[0]
+    return ch == '_' or ('a' <= ch <= 'z') or ('A' <= ch <= 'Z')
 
   @property
   def is_str(self):
-    return self._type == 'string'
+    ch = self._text[0]
+    return ch == '\'' or ch == '"'
 
   @property
   def is_newline(self):
-    return self._type == 'newline'
+    ch = self._text[0]
+    return ch == '\r' or ch == '\n'
 
   @property
   def is_blank(self):
-    return self._type == 'blank'
+    ch = self._text[0]
+    return ch == ' ' or ch == '\t'
 
   @property
   def is_blank_or_newline(self):

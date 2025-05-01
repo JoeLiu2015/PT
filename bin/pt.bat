@@ -1,8 +1,12 @@
 @echo off
-:: User can configure the Python path here
-set PYTHON_PATH=C:\Program Files\Python312\python.exe
 :: User can configure the location of the pt module here (directory path)
 set PT_PATH=..\..\PT
+:: User can configure the Python path here
+set PYTHON_PATH=C:\Program Files\Python312\python.exe
+for /f "delims=" %%i in ('where python') do (
+    set "PYTHON_PATH=%%i"
+    goto found
+)
 
 :: Check if the configured Python path exists
 if not exist "%PYTHON_PATH%" (
@@ -10,6 +14,7 @@ if not exist "%PYTHON_PATH%" (
     exit /b 1
 )
 
+:found
 :: Check if the configured pt module directory exists
 if not exist "%PT_PATH%" (
     echo Error: The pt module directory "%PT_PATH%" does not exist.
