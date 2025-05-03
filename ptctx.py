@@ -903,8 +903,10 @@ class _Block:
     assert type(tokens) is list, 'tokens must be _Token list'
     assert block_type in ['text', 'code', 'expr'], 'type must be one value of [\'text\', \'code\', \'expr\']'
     if __debug__:
+      line = tokens[0].line if len(tokens) > 0 else -1
       for token in tokens:
         assert type(token) is _Token, 'tokens must be _Token list'
+        assert line == token.line, 'all tokens must be in the same line'
 
     self._tokens = tokens  # _Token[]
     self._type = block_type
@@ -941,17 +943,6 @@ class _Block:
   @property
   def is_empty(self):
     return len(self._tokens) == 0
-
-  @property
-  def line_count(self):
-    tok_count = len(self._tokens)
-    if tok_count == 0:
-      return 0
-    elif tok_count == 1:
-      return 1
-    else:
-      return self._tokens[-1].line - self._tokens[0].line + 1
-
   @property
   def line_begin(self):
     if len(self._tokens) == 0:
@@ -1049,14 +1040,15 @@ class _Block:
     self._remove_tail_blank = value
 
   def copy(self):
-    b = _Block([], self._type)
+    new_toks = []
+    for tok in self._tokens:
+      new_toks.append(tok.copy())
+    b = _Block(new_toks, self._type)
     b._single_line_code  = self._single_line_code
     b._code_offset       = self._code_offset
     b._expr_pos          = self._expr_pos
     b._remove_head_blank = self._remove_head_blank
     b._remove_tail_blank = self._remove_tail_blank
-    for tok in self._tokens:
-      b._tokens.append(tok.copy())
     return b
 
 
@@ -1159,6 +1151,11 @@ class _Block:
     return ret
 
   def expr_append_self(self):
-    self._tokens.append(_Token('(', -1, -1))
-    self._tokens.append(_Token('self', -1, -1))
-    self._tokens.append(_Token(')', -1, -1))
+    line = -1
+    offset = -1
+    if len(self._tokens) > 0:
+      line = self._tokens[-1].line
+      offset = self._tokens[-1].offset + self._tokens[-1].length
+    self._tokens.append(_Token('(',    line, offset))
+    self._tokens.append(_Token('self', line, offset + 1))
+    self._tokens.append(_Token(')',    line, offset + 5))
