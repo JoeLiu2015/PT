@@ -619,7 +619,7 @@ class Tokenizer:
           continue
         self._lines.append(line)
       elif self._state == 'code':
-        self._parse_code_lines()
+        self._lines.extend(self._parse_code_lines())
       elif self._state == 'expr':
         expr_block = self._parse_expr()
         self._lines.append(expr_block)
@@ -628,16 +628,16 @@ class Tokenizer:
     line_count = len(self._lines)
 
     i = 0
-    empty_lines = []
+    to_remove_blanks = []
     while i < line_count:
       if self._lines[i].type == 'code' or self._lines[i].type == 'expr':
-        i = self._remove_blank_line(i, line_count, empty_lines)
+        i = self._remove_blank_line(i, line_count, to_remove_blanks)
       else:
         i += 1
-    for line_NO in empty_lines:
+    for line_NO in to_remove_blanks:
       self._lines[line_NO] = None
 
-  def _remove_blank_line(self, i, line_count, empty_lines):
+  def _remove_blank_line(self, i, line_count, to_remove_blanks):
     retI = i+1
     line = self._lines[i]
     pre_line  = self._lines[i-1] if i > 0 else None
@@ -671,9 +671,9 @@ class Tokenizer:
             line.remove_tail_blank = '+'
 
     if line.remove_head_blank == '-' and pre_line is not None and pre_line.is_blank and pre_line.line_begin == line.line_begin:
-      empty_lines.append(i-1)
+      to_remove_blanks.append(i-1)
     if line.remove_tail_blank == '-' and next_line is not None and next_line.is_blank and next_line.line_begin >= last_code.line_end:
-      empty_lines.append(retI)
+      to_remove_blanks.append(retI)
       retI += 1
 
     return retI
@@ -770,20 +770,19 @@ class Tokenizer:
       cur_len, first_word = line.blank_len, line.first_word
       # Ignore comments lines
       if first_word.startswith('#') or first_word.startswith('"""') or first_word.startswith("'''"):
-        cur_len = 0xFFFF
+        continue
       if cur_len < min_blank_len:
         min_blank_len = cur_len
 
     is_single_line = (len(lines) - blank_line_count) == 1
     for line in lines:
       if line.is_blank:
-        self._lines.append(line)
         continue
       line.trim_blank(min_blank_len)
       if is_single_line:
         line.is_single_line_code = True
         line.code_offset = self._code_offset
-      self._lines.append(line)
+    return lines
 
 
   def _parse_expr(self):
@@ -809,10 +808,10 @@ class Tokenizer:
     rm_tail_blank = '+'
     if len(toks) > 0 and toks[0].text == '-':
       rm_head_blank = toks[0].text
-      toks.pop(0)
+      del toks[0]
     if len(toks) > 0 and toks[-1].text == '-':
       rm_tail_blank = toks[-1].text
-      toks.pop(-1)
+      del toks[-1]
 
     # remove empty blank
     ret = []
