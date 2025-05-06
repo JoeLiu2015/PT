@@ -217,16 +217,18 @@ class _PTCtx:
       with open(real_path, 'rb') as fh:
         try:
           exec(fh.read(), self._g)
+          self._log(LOG_INFO, 'Extension file \'' + real_path + '\' load successfully.')
         except Exception as ex:
-          self._log(LOG_ERROR, 'File to exec file "' + py_file + '": ' + str(ex))
+          self._log(LOG_ERROR, 'Failed to load extension file "' + py_file + '": ' + str(ex))
     elif ptutil.path_exists(real_path):
       fs = ptutil.path_files(real_path, '*.py')
       for f in fs:
         with open(f, 'rb') as fh:
           try:
             exec(fh.read(), self._g)
+            self._log(LOG_INFO, 'Extension file \'' + f + '\' load successfully.')
           except Exception as ex:
-            self._log(LOG_ERROR, 'File to exec file "' + f + '": ' + str(ex))
+            self._log(LOG_ERROR, 'Failed to load extension file "' + f + '": ' + str(ex))
     else:
       self._log(LOG_ERROR, 'Invalid extension \'' + real_path + '\'')
 
@@ -627,16 +629,16 @@ class Tokenizer:
 
     # remove some useless blanks at the start/end of the line
     i = 0
-    empty_lines = []
+    to_remove_blanks = []
     while i < line_count:
       if self._lines[i].type == 'code' or self._lines[i].type == 'expr':
-        i = self._remove_blank_line(i, line_count, empty_lines)
+        i = self._remove_blank_line(i, line_count, to_remove_blanks)
       else:
         i += 1
-    for line_NO in empty_lines:
+    for line_NO in to_remove_blanks:
       self._lines[line_NO] = None
 
-  def _remove_blank_line(self, i, line_count, empty_lines):
+  def _remove_blank_line(self, i, line_count, to_remove_blanks):
     retI = i+1
     line = self._lines[i]
     pre_line  = self._lines[i-1] if i > 0 else None
@@ -670,9 +672,9 @@ class Tokenizer:
             line.remove_tail_blank = '+'
 
     if line.remove_head_blank == '-' and pre_line is not None and pre_line.is_blank and pre_line.line_begin == line.line_begin:
-      empty_lines.append(i-1)
+      to_remove_blanks.append(i-1)
     if line.remove_tail_blank == '-' and next_line is not None and next_line.is_blank and next_line.line_begin >= last_code.line_end:
-      empty_lines.append(retI)
+      to_remove_blanks.append(retI)
       retI += 1
 
     return retI
@@ -807,10 +809,10 @@ class Tokenizer:
     rm_tail_blank = '+'
     if len(toks) > 0 and toks[0].text == '-':
       rm_head_blank = toks[0].text
-      toks.pop(0)
+      del toks[0]
     if len(toks) > 0 and toks[-1].text == '-':
       rm_tail_blank = toks[-1].text
-      toks.pop(-1)
+      del toks[-1]
 
     # remove empty blank
     ret = []
@@ -833,23 +835,9 @@ class _Token:
     self._text = text
     self._line = line
     self._offset = offset
-    ch = self._text[0]
-    if '0' <= ch <= '9':
-      self._type = 'number'
-    elif ch in [' ', '\t']:
-      self._type = 'blank'
-    elif ch in '\r\n':
-      self._type = 'newline'
-    elif ch in ['\'', '"']:
-      self._type = 'string'
-    elif ch == '_' or ('a' <= ch <= 'z') or ('A' <= ch <= 'Z'):
-      self._type = 'name'
-    else:
-      self._type = ''
 
   def copy(self):
     t = _Token(self.text, self._line, self._offset)
-    t._type = self._type
     return t
 
   def __str__(self):
@@ -876,32 +864,29 @@ class _Token:
     return self._offset
 
   @property
-  def type(self):
-    return self._type
-
-  @type.setter
-  def type(self, val):
-    self._type = val
-
-  @property
   def is_number(self):
-    return self._type == 'number'
+    ch = self._text[0]
+    return '0' <= ch <= '9'
 
   @property
   def is_name(self):
-    return self._type == 'name'
+    ch = self._text[0]
+    return ch == '_' or ('a' <= ch <= 'z') or ('A' <= ch <= 'Z')
 
   @property
   def is_str(self):
-    return self._type == 'string'
+    ch = self._text[0]
+    return ch == '\'' or ch == '"'
 
   @property
   def is_newline(self):
-    return self._type == 'newline'
+    ch = self._text[0]
+    return ch == '\r' or ch == '\n'
 
   @property
   def is_blank(self):
-    return self._type == 'blank'
+    ch = self._text[0]
+    return ch == ' ' or ch == '\t'
 
   @property
   def is_blank_or_newline(self):
@@ -918,8 +903,10 @@ class _Block:
     assert type(tokens) is list, 'tokens must be _Token list'
     assert block_type in ['text', 'code', 'expr'], 'type must be one value of [\'text\', \'code\', \'expr\']'
     if __debug__:
+      line = tokens[0].line if len(tokens) > 0 else -1
       for token in tokens:
         assert type(token) is _Token, 'tokens must be _Token list'
+        assert line == token.line, 'all tokens must be in the same line'
 
     self._tokens = tokens  # _Token[]
     self._type = block_type
@@ -956,17 +943,6 @@ class _Block:
   @property
   def is_empty(self):
     return len(self._tokens) == 0
-
-  @property
-  def line_count(self):
-    tok_count = len(self._tokens)
-    if tok_count == 0:
-      return 0
-    elif tok_count == 1:
-      return 1
-    else:
-      return self._tokens[-1].line - self._tokens[0].line + 1
-
   @property
   def line_begin(self):
     if len(self._tokens) == 0:
@@ -1064,14 +1040,15 @@ class _Block:
     self._remove_tail_blank = value
 
   def copy(self):
-    b = _Block([], self._type)
+    new_toks = []
+    for tok in self._tokens:
+      new_toks.append(tok.copy())
+    b = _Block(new_toks, self._type)
     b._single_line_code  = self._single_line_code
     b._code_offset       = self._code_offset
     b._expr_pos          = self._expr_pos
     b._remove_head_blank = self._remove_head_blank
     b._remove_tail_blank = self._remove_tail_blank
-    for tok in self._tokens:
-      b._tokens.append(tok.copy())
     return b
 
 
@@ -1174,6 +1151,11 @@ class _Block:
     return ret
 
   def expr_append_self(self):
-    self._tokens.append(_Token('(', -1, -1))
-    self._tokens.append(_Token('self', -1, -1))
-    self._tokens.append(_Token(')', -1, -1))
+    line = -1
+    offset = -1
+    if len(self._tokens) > 0:
+      line = self._tokens[-1].line
+      offset = self._tokens[-1].offset + self._tokens[-1].length
+    self._tokens.append(_Token('(',    line, offset))
+    self._tokens.append(_Token('self', line, offset + 1))
+    self._tokens.append(_Token(')',    line, offset + 5))
