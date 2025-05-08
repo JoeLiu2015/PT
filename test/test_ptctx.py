@@ -153,6 +153,27 @@ b
       print(ret)
       self.assertEqual(expect_ret, ret)
 
+  def test_code_with_blank_line(self):
+      template = '''
+{% m = 5 %}      
+  {% 
+
+if m == 5
+
+   %}
+m is good
+   {%
+
+endif
+
+%}  
+      '''
+      expect_ret = '''
+m is good
+      '''
+      ret = PT.eval(template,debug=True)
+      print(ret)
+      self.assertEqual(expect_ret, ret)
   def test_expr(self):
     template = '''[
 {%for i in range(1,101)%}
@@ -198,7 +219,7 @@ starts()with()ha
 
 ot starts with ha
 ]'''
-    ret = PT.eval(template)
+    ret = PT.eval(template, debug=True)
     self.assertEqual(ret, expected_ret)
     print(ret)
 

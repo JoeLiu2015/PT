@@ -715,8 +715,6 @@ class Tokenizer:
   def _parse_code_lines(self):
     lines = []
     line = []
-    first_tok, min_blank_len = None, -1
-    pre_tok = None
     tok = None
     rm_head_blank = ''
     rm_tail_blank = ''
@@ -725,33 +723,35 @@ class Tokenizer:
     while True:
       pre_tok = tok
       tok = self.next_tok(custom_toks=['%}'])
-      if tok is None or tok.text == '%}':
+      if tok is None:
+        raise SyntaxError("The code block is not completed at line %d." % self._line)
+
+      if tok.text == '%}':
         if pre_tok is not None and pre_tok.text in ['-', '+']:
           rm_tail_blank = pre_tok.text
         self._state = 'text'
         break
 
-      # Append blank token at the first code line
-      if first_tok is None:
-        first_tok = tok
+      # Process the first token
+      if pre_tok is None:
         if tok.text in ['-', '+']:
           rm_head_blank = tok.text
           tok.text = ' '
-          tok.type = 'blank'
 
-        if first_tok.offset > 0:
-          if first_tok.is_blank:
-            tok = _Token(' ' * first_tok.offset + tok.text, tok.line, 0)
+        if tok.offset > 0:
+          if tok.is_blank:
+            tok = _Token(' ' * tok.offset + tok.text, tok.line, 0)
           else:
-            line.append(_Token(' ' * first_tok.offset, tok.line, 0))
+            line.append(_Token(' ' * tok.offset, tok.line, 0))
       line.append(tok)
+
       if tok.is_newline:
-        line_block = _Block(line, 'code')
-        lines.append(line_block)
+        lines.append(_Block(line, 'code'))
         line = []
+    # end while
+
     if len(line) > 0:
-      line_block = _Block(line, 'code')
-      lines.append(line_block)
+      lines.append(_Block(line, 'code'))
     else:
       # the line only has "%}", insert a blank for it, so that we can remove CRLF correctly
       line.append(_Token(' ', tok.line, tok.offset))
@@ -759,7 +759,7 @@ class Tokenizer:
 
     if len(lines) > 0:
       lines[0].remove_head_blank = rm_head_blank
-      lines[0].remove_tail_blank = rm_tail_blank
+      lines[-1].remove_tail_blank = rm_tail_blank
 
     # 2. Trim leading blanks for every code line
     min_blank_len = 0xFFFF
@@ -768,12 +768,10 @@ class Tokenizer:
       if line.is_blank:
         blank_line_count += 1
         continue
-      cur_len, first_word = line.blank_len, line.first_word
-      # Ignore comments lines
-      if first_word.startswith('#') or first_word.startswith('"""') or first_word.startswith("'''"):
+      if line.is_comments:
         continue
-      if cur_len < min_blank_len:
-        min_blank_len = cur_len
+      if line.blank_len < min_blank_len:
+        min_blank_len = line.blank_len
 
     is_single_line = (len(lines) - blank_line_count) == 1
     for line in lines:
@@ -781,6 +779,7 @@ class Tokenizer:
         continue
       line.trim_blank(min_blank_len)
       if is_single_line:
+        line.trim_end()
         line.is_single_line_code = True
         line.code_offset = self._code_offset
     return lines
@@ -791,7 +790,7 @@ class Tokenizer:
     while True:
       tok = self.next_tok(custom_toks=['}}'])
       if tok is None:
-        raise SyntaxError("The express is not completed at lien %d." % self._line)
+        raise SyntaxError("The expression is not completed at line %d." % self._line)
       txt = tok.text
       if txt.startswith('#'):
         raise SyntaxError("The comments '%s' can not appear in the expression '%s'." % (tok, self._line))
@@ -804,14 +803,14 @@ class Tokenizer:
         break
       else:
         toks.append(tok)
-    # remove blank identify
+    # Check blank-removing identifier
     rm_head_blank = '+'
     rm_tail_blank = '+'
     if len(toks) > 0 and toks[0].text == '-':
-      rm_head_blank = toks[0].text
+      rm_head_blank = '-'
       del toks[0]
     if len(toks) > 0 and toks[-1].text == '-':
-      rm_tail_blank = toks[-1].text
+      rm_tail_blank = '-'
       del toks[-1]
 
     # remove empty blank
@@ -988,6 +987,11 @@ class _Block:
     return True
 
   @property
+  def is_comments(self):
+    w = self.first_word
+    return w.startswith('#') or w.startswith('"""') or w.startswith("'''")
+
+  @property
   def token_count(self):
     return len(self._tokens)
 
@@ -1005,6 +1009,7 @@ class _Block:
         return ret
       else:
         return self._tokens[i].text
+    return ''
 
   @property
   def words(self):
@@ -1065,13 +1070,15 @@ class _Block:
     if blen == length:
       self._tokens.pop(0)
     elif blen > length:
-      tok0 = self._tokens[0]
-      self._tokens[0] = _Token(' ' * (blen - length), tok0.line, tok0.offset + length)
+      tok = self._tokens[0]
+      self._tokens[0] = _Token(' ' * (blen - length), tok.line, tok.offset + length)
 
-  def trim_leading_blank(self):
-    assert self._type == 'text', 'trim_leading_blank is only used on text'
-    # TODO:
-
+  def trim_end(self):
+    while len(self._tokens) > 0:
+      if self._tokens[-1].is_blank_or_newline:
+        del self._tokens[-1]
+      else:
+        break
   def expr_reset(self):
     self._expr_pos = 0
 
