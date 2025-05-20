@@ -1,3 +1,4 @@
+import collections
 import os
 import ptutil
 import inspect
@@ -10,15 +11,22 @@ class PT:
   @staticmethod
   def execute(argv):
     usage = '''
-Usage: python pt <template>
-  -out  <output file>
-  -args <python dictionary that define variables>
-  -ini  <argname=ini file>
-  -json <argname=json file>
-  -xml  <argname=xml file>
-  -yaml <argname=yaml file>
-  -ext  <a single python file -or- a directory that contains python files>
-  -log  <0-ERROR 1-INFO(default)  2-DEBUG>      
+python pt <template> [options] 
+options：
+  -nologo               Suppress the display of the logo.
+  -nocosttime           Do not show execution time.
+  -out  <file>          Specify the output file, otherwise the output will be written to stdout.
+  -args <dict>          Define variables using a Python dictionary.
+  -ini  <name=file>     Load variables from an INI file.
+  -json <name=file>     Load variables from a JSON file.
+  -xml  <name=file>     Load variables from an XML file.
+  -yaml <name=file>     Load variables from a YAML file.
+  -kv   <name=file>     Load variables from a Key-Value file.
+  -ext  <path>          Specify a Python file or a directory containing Python files for extension.
+  -log  <level>         Set log level: 
+                         0 - ERROR
+                         1 - INFO (default)
+                         2 - DEBUG
 '''
 
     try:
@@ -40,56 +48,38 @@ Usage: python pt <template>
           globals()[fname] = obj
 
       ctx = _PTCtx(template_file)
+
       if argc > 2:
         if argc % 2 != 0:
           print('Wrong arguments list.')
           print(usage)
           return
+        # Set the log level first, then process the -out parameter using the appropriate log level.
+        if '-log' in argv:
+          ctx.log_level = int(argv[argv.index('-log') + 1])
 
         for i in range(2, argc, 2):
-          option = argv[i]
-          val = argv[i + 1]
+          option, val = argv[i], argv[i + 1]
 
           if option == '-out':
             ctx.output_file(val, True)
           elif option == '-args':
             ctx.variables(eval(val))
           elif option == '-ini':
-            pos = val.find('=')
-            if pos < 0:
-              raise SyntaxError('Can not find name separator "=" in "%s".' % val)
-            name = val[0:pos].strip()
-            ini_file = val[pos+1:].strip()
-            d = {}
-            d[name] = ptutil.data_ini(ini_file)
-            ctx.variables(d)
+            name, ini_file = PT._split_name_value(val)
+            ctx.variables({name: ptutil.data_ini(ini_file)})
           elif option == '-json':
-            pos = val.find('=')
-            if pos < 0:
-              raise SyntaxError('Can not find name separator "=" in "%s".' % val)
-            name = val[0:pos].strip()
-            json_file = val[pos+1:].strip()
-            d = {}
-            d[name] = ptutil.data_json(json_file)
-            ctx.variables(d)
+            name, json_file = PT._split_name_value(val)
+            ctx.variables({name: ptutil.data_json(json_file)})
           elif option == '-xml':
-            pos = val.find('=')
-            if pos < 0:
-              raise SyntaxError('Can not find name separator "=" in "%s".' % val)
-            name = val[0:pos].strip()
-            xml_file = val[pos+1:].strip()
-            d = {}
-            d[name] = ptutil.data_xml(xml_file)
-            ctx.variables(d)
+            name, xml_file = PT._split_name_value(val)
+            ctx.variables( {name: ptutil.data_xml(xml_file)} )
           elif option == '-yaml':
-            pos = val.find('=')
-            if pos < 0:
-              raise SyntaxError('Can not find name separator "=" in "%s".' % val)
-            name = val[0:pos].strip()
-            yaml_file = val[pos+1:].strip()
-            d = {}
-            d[name] = ptutil.data_yaml(yaml_file)
-            ctx.variables(d)
+            name, yaml_file = PT._split_name_value(val)
+            ctx.variables( {name: ptutil.data_yaml(yaml_file)} )
+          elif option == '-kv':
+            name, kv_file = PT._split_name_value(val)
+            ctx.variables( {name: ptutil.data_KV(kv_file)} )
           elif option == '-ext':
             ctx.extension(val, True)
           elif option == '-log':
@@ -110,6 +100,12 @@ Usage: python pt <template>
       ctx.log_level = LOG_DEBUG
     return ctx.eval()
 
+  @staticmethod
+  def _split_name_value(val):
+    pos = val.find('=')
+    if pos < 0:
+      raise SyntaxError(f'Can not find name separator "=" in "{val}".')
+    return val[0:pos].strip(), val[pos + 1:].strip()
 
 class _PTCtx:
   def __init__(self, template, args={}, output_file=None):
@@ -177,6 +173,7 @@ class _PTCtx:
     self._translate()
     self._log(LOG_DEBUG, '======Code=====\r\n' + self.add_line_NO(self._code))
     self._g.update(self._l)
+    self._g['OrderedDict'] = collections.OrderedDict
     exec(self._code, self._g)
     return self._output
 

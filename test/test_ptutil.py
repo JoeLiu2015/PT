@@ -158,7 +158,22 @@ g = fsafdsa
     self.assertEqual(m['sec2']['f'], 'ff')
     self.assertEqual(m['sec2']['g'], 'fsafdsa')
 
-
+  def test_data_kv(self):
+    input = '''
+    This is a test file
+    
+    other
+    
+    a = 123
+    b = ab
+    c = ['a','b']
+    
+    test test test
+    '''
+    x = data_KV(input)
+    self.assertEqual(x['a'], '123')
+    self.assertEqual(x['b'], 'ab')
+    self.assertEqual(x['c'], "['a','b']")
 
   def test_data_yaml(self):
     input = '''

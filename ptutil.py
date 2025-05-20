@@ -90,7 +90,6 @@ def data_ini(ini_input):
       config.read_string('[_default_]\n' + ini_input)
       no_section = True
 
-
   for sec_name in config.sections():
     if no_section and sec_name == '_default_':
       for opt_name, opt_val in config.items(sec_name):
@@ -101,6 +100,15 @@ def data_ini(ini_input):
     for opt_name, opt_val in config.items(sec_name):
       sec[opt_name] = opt_val
     ret[sec_name] = sec
+  return ret
+
+def data_KV(KV_input):
+  ret = OrderedDict([])
+  text = data_read(KV_input)
+  for line in text.strip().splitlines():
+    if '=' in line:
+      key, value = line.split('=', 1)
+      ret[key.strip()] = value.strip().strip('"')
   return ret
 
 def data_sqlite3_table(sql_file, sql_query):
