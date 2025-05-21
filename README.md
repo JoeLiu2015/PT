@@ -377,6 +377,8 @@ ff
 
 #### 9.3 -json <argname=json file>
 We can use **-json** and following a JSON file to specify the input data.
+- **JSON object**: We store JSON object as a OrderedDict.
+- **JSON array**:  We store JSON array as an array.
 ##### Sample:
 test_json.pt
 ```
@@ -413,11 +415,11 @@ val2
 
 #### 9.4 -xml  <argname=xml file>
 We can use **-xml** and following a XML file to specify the input data.
-For every XML node:
+##### For every XML node, it expose the following properties:
 - **tag**: XML tag.
 - **attrs**: The attributes of the XML element, it is a OrderedDict.
 - **text**: The text of the XML element.
-- **childs**:The children of the XML element, it is a array.
+- **childs**:The children of the XML element, it is an array.
 - **child_name**: Specify a single child node
 - **child_name[n]**: Specifies a child node that appears multiple times (0-based index).
 ##### Sample:
@@ -463,9 +465,103 @@ single text
 ```
 
 #### 9.5 -yaml <argname=yaml file>
+We can use **-yaml** and following a YAML file to specify the input data.
+##### For every XML node, it expose the following properties:
+- **tag**: XML tag.
+- **attrs**: The attributes of the XML element, it is a OrderedDict.
+- **text**: The text of the XML element.
+- **childs**:The children of the XML element, it is an array.
+- **child_name**: Specify a single child node
+- **child_name[n]**: Specifies a child node that appears multiple times (0-based index).
+##### Sample:
+test_yaml.pt
+```
+{{x.openapi}}
+{{x.info.title}}
 
+{{x.info.description}}
+
+{{x.paths./path/path1/path2.post.responses.'200'.content.application/json.schema.$ref}}
+{{x.components.schemas.Data_Struct.properties.serverStatus.enum[0]}}
+```
+file.yaml
+```
+openapi: 3.0.0
+info:
+  title: Test
+  version: '1.0'
+  description: 'desc'
+paths:
+  /path/path1/path2:
+    post:
+      summary: 'DoSomething'
+      description: 'DoSomething description.'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Data_Struct'
+        '400':
+          summary: '400 summary'
+components:
+  schemas:
+    Data_Struct:
+      type: object
+      properties:
+        serverStatus:
+          type: integer
+          description: "desc"
+          enum:
+            - 0 - ONE
+            - 1 - TWO
+        str:
+          type: string
+          description: "desc"
+        sessions:
+          type: array
+          items:
+            type: string
+```
+Execute the command **python pt test_yaml.pt -yaml x=file.yaml** to get the following result:
+```
+3.0.0
+Test
+
+'desc'
+
+'#/components/schemas/Data_Struct'
+'0 - ONE'
+```
 #### 9.6 -kv <argname=Key-Value file>
-
-
+We can use **-kv** and following a Key-Value file to specify the input data.
+- We will parse the file line by line, if the line contains '=', we will split it to 2 parts, the first part is key, and the second part is the value.
+- We will skip invalid key-value line.
+##### Sample:
+test_kv.pt
+```
+{{x.a}}
+{{x.b}}
+{{x.c}}
+```
+file.txt
+```
+    This is a test file
+    
+    other
+    
+    a = 123
+    b = ab
+    c = ['a','b']
+    
+    test test test
+```
+Execute the command **python pt test_kv.pt -kv x=file.txt** to get the following result:
+```
+123
+ab
+['a','b']
+```
 ### 10. LICENSE
 Apache-2.0 License
