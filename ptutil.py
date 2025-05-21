@@ -89,6 +89,8 @@ def data_ini(ini_input):
     if 'File contains no section headers' in err.message:
       config.read_string('[_default_]\n' + ini_input)
       no_section = True
+    else:
+      raise SyntaxError('Failed to parse INI data: ' + str(err))
 
   for sec_name in config.sections():
     if no_section and sec_name == '_default_':
@@ -121,10 +123,14 @@ def data_sqlite3_table(sql_file, sql_query):
     return ret
 
 def data_xml(xml_input):
-  if file_exists(xml_input):
-    domTree = xml.dom.minidom.parse(xml_input)
-  else:
-    domTree = xml.dom.minidom.parseString(xml_input)
+  try:
+    if file_exists(xml_input):
+      domTree = xml.dom.minidom.parse(xml_input)
+    else:
+      domTree = xml.dom.minidom.parseString(xml_input)
+  except Exception as err:
+    raise SyntaxError('Failed to parse XML data: ' + str(err))
+
   element = domTree.documentElement
   return _xml2Dic(element)
 
@@ -158,7 +164,7 @@ def _parseYamlObj(lines, spaces):
       obj = OrderedDict()
       for line in lines:
         if not ':' in line:
-          raise ValueError('invalid key:value line - ' + line)
+          raise ValueError('Faile to parse YAML file: invalid key:value line - ' + line)
         key, value = line.split(':', 1)
         obj[key.strip()] = value.strip()
       return obj
@@ -166,11 +172,11 @@ def _parseYamlObj(lines, spaces):
       obj = []
       for line in lines:
         if not line.lstrip().startswith('-'):
-          raise ValueError('invalid array item line - ' + line)
+          raise ValueError('Faile to parse YAML file: invalid array item line - ' + line)
         obj.append(line.lstrip()[1:].strip())
       return obj
     else:
-      raise ValueError('invalid yaml line - ' + lines[0])
+      raise ValueError('Faile to parse YAML file: invalid yaml line - ' + lines[0])
 
   groups = OrderedDict()
   level = spaces[0]
@@ -191,19 +197,19 @@ def _parseYamlObj(lines, spaces):
         if spaces[n] == level:
           break
         elif spaces[n] < level:
-          raise ValueError('invalid array item line - ' + lines[n])
+          raise ValueError('Faile to parse YAML file: invalid array item line - ' + lines[n])
         n = n + 1
       groups[i] = (i + 1, n)
       i = n
       continue
-    raise ValueError('invalid array item line with wrong level - ' + lines[i+1])
+    raise ValueError('Faile to parse YAML file: invalid array item line with wrong level - ' + lines[i+1])
 
   if lines[0].lstrip().startswith('-'):
     obj = []
     for k, v in groups.items():
       line = lines[k]
       if not line.lstrip().startswith('-'):
-        raise ValueError('invalid array item line - ' + line)
+        raise ValueError('Faile to parse YAML file: invalid array item line - ' + line)
       if v is None:
         obj.append(line.strip()[1:])
       else:
@@ -221,7 +227,7 @@ def _parseYamlObj(lines, spaces):
     for k, v in groups.items():
       line = lines[k]
       if not ':' in line:
-        raise ValueError('invalid key:value line - ' + line)
+        raise ValueError('Faile to parse YAML file: invalid key:value line - ' + line)
       key, value = line.split(':', 1)
       if v is None:
         obj[key.strip()] = value.strip()
@@ -229,7 +235,7 @@ def _parseYamlObj(lines, spaces):
         obj[key.strip()] = _parseYamlObj(lines[v[0]:v[1]], spaces[v[0]:v[1]])
     return obj
   else:
-    raise ValueError('invalid yaml line - ' + lines[0])
+    raise ValueError('Faile to parse YAML file: invalid yaml line - ' + lines[0])
 
 def _xml2Dic(element):
   ret = OrderedDict()

@@ -33,15 +33,22 @@ python pt page.pt -out page.html -args "{'page': {'title': 'Test Page', 'body': 
 **Usage**
 
 ```
-Usage: python pt <template>
-  -out  <output file>
-  -args <python dictionary that define variables>
-  -ini  <argname=ini file>
-  -json <argname=json file>
-  -xml  <argname=xml file>
-  -yaml <argname=yaml file>
-  -ext  <a single python file -or- a directory that contains python files>
-  -log  <0-ERROR(default) 1-INFO  2-DEBUG> 
+python pt <template> [options] 
+options：
+  -nologo               Suppress the display of the logo.
+  -nocosttime           Do not show execution time.
+  -out  <file>          Specify the output file, otherwise the output will be written to stdout.
+  -args <dict>          Define variables using a Python dictionary.
+  -ini  <name=file>     Load variables from an INI file.
+  -json <name=file>     Load variables from a JSON file.
+  -xml  <name=file>     Load variables from an XML file.
+  -yaml <name=file>     Load variables from a YAML file.
+  -kv   <name=file>     Load variables from a Key-Value file.
+  -ext  <path>          Specify a Python file or a directory containing Python files for extension.
+  -log  <level>         Set log level: 
+                         0 - ERROR
+                         1 - INFO (default)
+                         2 - DEBUG 
 ```
 
 ### 3. Code Block
@@ -321,18 +328,144 @@ fmt.println("test")
 The template always has the data source to generate result. There are following ways to specify the data source for the template
 
 #### 9.1 -args \<python dictionary>
-
-
+- We can use **-args** and following a Python dictionary to specify the input data.
+##### Sample:
+test_args.pt
+```
+{% if input['hasIf'] %}
+if condition {
+{% endif %}
+  fmt.println("test")
+{% if input['hasIf'] %}
+}
+{% endif %}  
+```
+Execute the command **python pt test_args.pt -args "{'input': {'hasIf': True}}"** to get the following result:
+```
+if condition {
+  fmt.println("test")
+}
+```
 #### 9.2 -ini  <argname=ini file>
-
+- We can use **-ini** and following a INI file to specify the input data.
+##### Sample:
+test_ini.pt
+```
+{{x.a}}
+{{x.b}}
+{{x.c}}
+{{x.sec2.e}}
+{{x.sec2.f}}
+```
+file.ini
+```
+  a = 123
+  b = ab
+  c = ['a','b']
+  [sec2]
+  e = 34
+  f = ff
+```
+Execute the command **python pt test_ini.pt -ini x=file.ini** to get the following result:
+```
+123
+ab
+['a','b']
+34
+ff
+```
 
 #### 9.3 -json <argname=json file>
-
+We can use **-json** and following a JSON file to specify the input data.
+##### Sample:
+test_json.pt
+```
+{{x.num}}
+{{x.bool}}
+{{x.array[0]}}
+{{x.array[1]}}
+{{x.array[2]}}
+{{x.dic.key1}}
+{{x.dic.key2}}
+```
+file.json
+```
+{
+    "num"  : 1234,
+    "bool" : true,
+    "array": ["str", 123, true],
+    "dic"  : {
+                "key1": "val1",
+                "key2": "val2"
+             }
+}
+```
+Execute the command **python pt test_json.pt -json x=file.json** to get the following result:
+```
+1234
+true
+str
+123
+true
+val1
+val2
+```
 
 #### 9.4 -xml  <argname=xml file>
+We can use **-xml** and following a XML file to specify the input data.
+For every XML node:
+- **tag**: XML tag.
+- **attrs**: The attributes of the XML element, it is a OrderedDict.
+- **text**: The text of the XML element.
+- **childs**:The children of the XML element, it is a array.
+- **child_name**: Specify a single child node
+- **child_name[n]**: Specifies a child node that appears multiple times (0-based index).
+##### Sample:
+test_xml.pt
+```
+{{x.tag}}
+{{x.attrs.attr1}}
+{{x.attrs.attr2}}
+{{x.attrs.attr3}}
 
+{{x.node[0].attrs.n}}
+{{x.node[1].text}}
+{{x.single.attrs.a}}
+{{x.single.text}}
+
+{{x.childs[1].text}}
+{{x.childs[2].text}}
+```
+file.xml
+```
+<joe attr1="abc" attr2="3" attr4="true">
+    <node n="node.n" m="node.m">i'm the first node</node>
+    <node>
+        i'm the second node
+    </node>
+    <single a="single.a">single text</single>
+</joe>
+```
+Execute the command **python pt test_xml.pt -xml x=file.xml** to get the following result:
+```
+joe
+abc
+3
+true
+
+node.n
+i'm the second node
+single.a
+single text
+
+i'm the second node
+single text
+```
 
 #### 9.5 -yaml <argname=yaml file>
+
+#### 9.6 -kv <argname=Key-Value file>
+
 
 ### 10. LICENSE
 Apache-2.0 License
