@@ -113,14 +113,21 @@ def data_KV(KV_input):
       ret[key.strip()] = value.strip().strip('"')
   return ret
 
-def data_sqlite3_table(sql_file, sql_query):
+def _data_sqlite_row_factory(cursor, row):
+    return OrderedDict((col[0], row[idx]) for idx, col in enumerate(cursor.description))
+
+def data_sqlite(sql_file, sql_query):
   with sqlite3.connect(sql_file) as conn:
+    conn.row_factory = _data_sqlite_row_factory
     c = conn.cursor()
-    execute_ret = c.execute("SELECT id, name  from controls")
-    ret = []
-    for row in execute_ret:
-      ret.append(row)
-    return ret
+    c.execute(sql_query)
+    rows = c.fetchall()
+    if len(rows) == 0:
+      return None
+    elif len(rows) == 1:
+      return rows[0]
+    else:
+      return rows
 
 def data_xml(xml_input):
   try:

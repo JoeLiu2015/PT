@@ -35,20 +35,22 @@ python pt page.pt -out page.html -args "{'page': {'title': 'Test Page', 'body': 
 ```
 python pt <template> [options] 
 options：
-  -nologo               Suppress the display of the logo.
-  -nocosttime           Do not show execution time.
-  -out  <file>          Specify the output file, otherwise the output will be written to stdout.
-  -args <dict>          Define variables using a Python dictionary.
-  -ini  <name=file>     Load variables from an INI file.
-  -json <name=file>     Load variables from a JSON file.
-  -xml  <name=file>     Load variables from an XML file.
-  -yaml <name=file>     Load variables from a YAML file.
-  -kv   <name=file>     Load variables from a Key-Value file.
-  -ext  <path>          Specify a Python file or a directory containing Python files for extension.
-  -log  <level>         Set log level: 
-                         0 - ERROR
-                         1 - INFO (default)
-                         2 - DEBUG 
+  -nologo                 Suppress the display of the logo.
+  -nocosttime             Do not show execution time.
+  -out  <file>            Specify the output file, otherwise the output will be written to stdout.
+  -ext  <path>            Specify a Python file or a directory containing Python files for extension.
+  -args <dict>            Define variables using a Python dictionary.
+  -ini  <name=file>       Load variables from an INI file.
+  -json <name=file>       Load variables from a JSON file.
+  -xml  <name=file>       Load variables from an XML file.
+  -yaml <name=file>       Load variables from a YAML file.
+  -kv   <name=file>       Load variables from a Key-Value file.
+  -sql  <name=file,query> Load variables from a SQLite file.
+  -log  <level>           Set log level:
+                            0 - ERROR
+                            1 - INFO (default)
+                            2 - DEBUG
+
 ```
 
 ### 3. Code Block
@@ -279,7 +281,7 @@ multiple_output.pt
 </html>
 {% endfor %}
 ```
-Execute the command **python pt multiple_files.pt** to generated the following files:
+Execute the command **python pt multiple_files.pt** to generate the following files:
 ```
 index.html
 pages\page1.html
@@ -419,9 +421,9 @@ We can use **-xml** and following a XML file to specify the input data.
 - **tag**: XML tag.
 - **attrs**: The attributes of the XML element, it is a OrderedDict.
 - **text**: The text of the XML element.
-- **childs**:The children of the XML element, it is an array.
-- **child_name**: Specify a single child node
-- **child_name[n]**: Specifies a child node that appears multiple times (0-based index).
+- **childs**:The children of the XML element, it is an array (0-based index).
+- **{child_name}**: Specify a single child node
+- **{child_name}[n]**: Specifies a child node that appears multiple times (0-based index).
 ##### Sample:
 test_xml.pt
 ```
@@ -563,5 +565,13 @@ Execute the command **python pt test_kv.pt -kv x=file.txt** to get the following
 ab
 ['a','b']
 ```
+
+#### 9.7 -sql <argname=SQLite file,query>
+We can use **-sql** and following a SQLite file, query statement to specify the input data.
+- **query**  - SQLite query statement.
+- **result** - If no rows are found, returns None; If only one row is found, returns the row as an OrderedDict; otherwise, returns all rows as a list of OrderedDict objects.
+##### Sample:
+ **python pt test_sql.pt -sql "x=file.db,SELECT * FROM product"** to get the result.
+
 ### 10. LICENSE
 Apache-2.0 License

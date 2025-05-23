@@ -13,20 +13,21 @@ class PT:
     usage = '''
 python pt <template> [options] 
 options：
-  -nologo               Suppress the display of the logo.
-  -nocosttime           Do not show execution time.
-  -out  <file>          Specify the output file, otherwise the output will be written to stdout.
-  -args <dict>          Define variables using a Python dictionary.
-  -ini  <name=file>     Load variables from an INI file.
-  -json <name=file>     Load variables from a JSON file.
-  -xml  <name=file>     Load variables from an XML file.
-  -yaml <name=file>     Load variables from a YAML file.
-  -kv   <name=file>     Load variables from a Key-Value file.
-  -ext  <path>          Specify a Python file or a directory containing Python files for extension.
-  -log  <level>         Set log level: 
-                         0 - ERROR
-                         1 - INFO (default)
-                         2 - DEBUG
+  -nologo                 Suppress the display of the logo.
+  -nocosttime             Do not show execution time.
+  -out  <file>            Specify the output file, otherwise the output will be written to stdout.
+  -ext  <path>            Specify a Python file or a directory containing Python files for extension.
+  -args <dict>            Define variables using a Python dictionary.
+  -ini  <name=file>       Load variables from an INI file.
+  -json <name=file>       Load variables from a JSON file.
+  -xml  <name=file>       Load variables from an XML file.
+  -yaml <name=file>       Load variables from a YAML file.
+  -kv   <name=file>       Load variables from a Key-Value file.
+  -sql  <name=file,query> Load variables from a SQLite file.
+  -log  <level>           Set log level:
+                            0 - ERROR
+                            1 - INFO (default)
+                            2 - DEBUG
 '''
 
     try:
@@ -80,6 +81,10 @@ options：
           elif option == '-kv':
             name, kv_file = PT._split_name_value(val)
             ctx.variables( {name: ptutil.data_KV(kv_file)} )
+          elif option == '-sql':
+            name, sql_val = PT._split_name_value(val)
+            sql_file, sql_query = PT._split_name_value(sql_val, ',')
+            ctx.variables({name: ptutil.data_sqlite(sql_file, sql_query)})
           elif option == '-ext':
             ctx.extension(val, True)
           elif option == '-log':
@@ -101,10 +106,10 @@ options：
     return ctx.eval()
 
   @staticmethod
-  def _split_name_value(val):
-    pos = val.find('=')
+  def _split_name_value(val, sep='='):
+    pos = val.find(sep)
     if pos < 0:
-      raise SyntaxError(f'Can not find name separator "=" in "{val}".')
+      raise SyntaxError(f'Can not find name separator "{sep}" in "{val}".')
     return val[0:pos].strip(), val[pos + 1:].strip()
 
 class _PTCtx:
