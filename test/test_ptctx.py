@@ -486,6 +486,54 @@ print('efg')
     -1-
     '''
     self.assertEqual(ret, expect_ret)
+
+  def test_single_line_if_3(self):
+    template = '''   
+    {% if i % 2 == 0 %}-2-{% endif %}
+    '''
+    ret = PT.eval(template, args={'i': 1}, debug=True)
+    expect_ret = '''   
+    '''
+    self.assertEqual(ret, expect_ret)
+    print('=================')
+
+    template = '''   
+{% if i % 2 == 0 %}-2-{% endif %}
+        '''
+    ret = PT.eval(template, args={'i': 1})
+    expect_ret = '''   
+        '''
+    self.assertEqual(ret, expect_ret)
+
+    template = '''  {% if i % 2 == 0 %}-2-{% endif %}  '''
+    ret = PT.eval(template, args={'i': 1})
+    expect_ret = ''
+    self.assertEqual(ret, expect_ret)
+
+  def test_single_line_if_2(self):
+    template = '''   
+    {% if i % 2 == 0 %}-2-{% endif %}
+    '''
+    ret = PT.eval(template, args={'i': 2})
+    expect_ret = '''   
+    -2-
+    '''
+    self.assertEqual(ret, expect_ret)
+
+    template = '''   
+{% if i % 2 == 0 %}-2-{% endif %}
+        '''
+    ret = PT.eval(template, args={'i': 2})
+    expect_ret = '''   
+-2-
+        '''
+    self.assertEqual(ret, expect_ret)
+
+    template = '''  {% if i % 2 == 0 %}-2-{% endif %}  '''
+    ret = PT.eval(template, args={'i': 2})
+    expect_ret = '''  -2-  '''
+    self.assertEqual(ret, expect_ret)
+
   def test_multi_line_if(self):
     template = '''
     {% for i in range(10) %}    
@@ -600,8 +648,7 @@ xtest
 test
 '''
     ret = PT.eval(template)
-    expect_ret = '''
-xtest
+    expect_ret = '''xtest
 '''
     self.assertEqual(ret, expect_ret)
 
@@ -672,7 +719,7 @@ test
     template = '''{% if False %}  x  
     {% endif -%}    test'''
     ret = PT.eval(template, debug=True)
-    expect_ret = '''    test'''
+    expect_ret = '''test'''
     self.assertEqual(ret, expect_ret)
 
   def test_blanks8(self):

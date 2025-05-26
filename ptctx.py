@@ -613,13 +613,10 @@ class Tokenizer:
     self._lines = []
     while True:
       if self._state == 'text':
-        line = self._next_text_line()
-        if line is None:
+        text_lines = self._parse_text_lines()
+        if text_lines is None:
           break
-        # 1. Ignore the empty line(0 tokens)
-        if line.is_empty:
-          continue
-        self._lines.append(line)
+        self._lines.extend(text_lines)
       elif self._state == 'code':
         self._lines.extend(self._parse_code_lines())
       elif self._state == 'expr':
@@ -627,61 +624,82 @@ class Tokenizer:
         self._lines.append(expr_block)
       else:
         raise AssertionError("Impossible go here")
-    line_count = len(self._lines)
 
     # remove some useless blanks at the start/end of the line
-    i = 0
-    to_remove_blanks = []
-    while i < line_count:
-      if self._lines[i].type == 'code' or self._lines[i].type == 'expr':
-        i = self._remove_blank_line(i, line_count, to_remove_blanks)
-      else:
-        i += 1
-    for line_NO in to_remove_blanks:
-      self._lines[line_NO] = None
+    to_None, to_trim_begin, to_trim_end = self._remove_code_line_blanks(self._lines)
 
-  def _remove_blank_line(self, i, line_count, to_remove_blanks):
-    retI = i+1
-    line = self._lines[i]
-    pre_line  = self._lines[i-1] if i > 0 else None
-    next_line = self._lines[retI] if retI < line_count else None
-    last_code = line
+    # process  {blank} {if xxx} {something no code} {endif} {blank} -> {if xxx} {blank} {something no code} {blank} {endif}
+    self._order_if_endif_line(self._lines)
 
-    # for multiple lines code, skip all code lines
-    if line.type == 'code':
-      while next_line is not None and next_line.type == "code":
-        retI += 1
-        last_code = next_line
-        next_line = self._lines[retI] if retI < line_count else None
+    for m in to_None:
+      self._lines[m] = None
+    for m in to_trim_begin:
+      self._lines[m].trim_begin()
+    for m in to_trim_end:
+      self._lines[m].trim_end()
 
-    if line.remove_head_blank == '' or line.remove_tail_blank == '':
-      pre = pre_line
-      if pre_line is not None and pre_line.is_blank:
-        pre = self._lines[i-2] if i > 1 else None
-      next = next_line
-      if next_line is not None and next_line.is_blank:
-        next = self._lines[retI+1] if retI+1 < line_count else None
-      if (pre is None or pre.line_begin < line.line_begin) and (next is None or next.line_begin > line.line_end):
-        if line.remove_head_blank == '':
-          if pre_line is not None and pre_line.line_begin == line.line_begin and pre_line.is_blank:
-            line.remove_head_blank = '-'
+  def _order_if_endif_line(self, lines):
+    # process  {blank} {if xxx} {something no code} {endif} {blank} -> {if xxx} {blank} {something no code} {blank} {endif}
+    line_count = len(self._lines)
+    line_start = 0
+    line_code_idxs = []
+    for i in range(line_count):
+      if lines[i].type == 'code':
+        line_code_idxs.append(i)
+      if lines[i].is_end_of_line or i == line_count - 1:
+        if (len(line_code_idxs) == 2 and
+            lines[line_code_idxs[0]].first_word == 'if' and
+            lines[line_code_idxs[1]].first_word == 'endif' and
+            lines[line_code_idxs[0]].remove_head_blank != '-' and
+            lines[line_code_idxs[1]].remove_tail_blank != '-'):
+          r = list(range(line_start, line_code_idxs[0])) + list(range(line_code_idxs[1] + 1, i + 1))
+          if all(lines[x].is_blank for x in r):
+            # swap
+            code_if, code_endif = lines[line_code_idxs[0]], lines[line_code_idxs[1]]
+            for m in range(line_code_idxs[0], line_start, -1): lines[m] = lines[m - 1]
+            for m in range(line_code_idxs[1], i):              lines[m] = lines[m + 1]
+            lines[line_start], lines[i] = code_if, code_endif
+        line_start = i + 1
+        line_code_idxs = []
+
+  def _remove_code_line_blanks(self, lines):
+    to_None = []
+    to_trim_end = []
+    to_trim_begin = []
+
+    line_count = len(self._lines)
+    line_start = 0
+    line_code_idxs = []
+    for i in range(line_count):
+      if lines[i].type == 'code':
+        line_code_idxs.append(i)
+      if lines[i].is_end_of_line or i == line_count - 1:
+        if len(line_code_idxs) == 1 and i - line_start + 1 > 1:
+          r = list(range(line_start, line_code_idxs[0])) + list(range(line_code_idxs[0] + 1, i + 1))
+          if all(lines[x].is_blank for x in r):
+            to_None.extend(r)
+        line_start = i + 1
+        line_code_idxs = []
+
+    for i in range(line_count):
+      if lines[i].type == 'text':
+        continue
+      if lines[i].remove_head_blank == '-':
+        for m in range(i-1, -1, -1):
+          if lines[m].type == 'text' and lines[m].is_blank:
+            to_None.append(m)
           else:
-            line.remove_head_blank = '+'
-        if line.remove_tail_blank == '':
-          if next_line is not None and next_line.line_begin >= last_code.line_end and next_line.is_blank:
-            line.remove_tail_blank = '-'
+            if lines[m].type == 'text': to_trim_end.append(m)
+            break
+      if lines[i].remove_tail_blank == '-':
+        for m in range(i + 1, line_count):
+          if lines[m].type == 'text' and lines[m].is_blank:
+            to_None.append(m)
           else:
-            line.remove_tail_blank = '+'
+            if lines[m].type == 'text': to_trim_begin.append(m)
+            break
 
-    if line.remove_head_blank == '-' and pre_line is not None and pre_line.is_blank and pre_line.line_begin == line.line_begin:
-      to_remove_blanks.append(i-1)
-    if line.remove_tail_blank == '-' and next_line is not None and next_line.is_blank and next_line.line_begin >= last_code.line_end:
-      to_remove_blanks.append(retI)
-      retI += 1
-
-    return retI
-
-
+    return to_None, to_trim_begin, to_trim_end
 
   def next_line(self):
     if self._lines is None:
@@ -693,9 +711,11 @@ class Tokenizer:
       return self._lines.pop(0)
 
 
-  def _next_text_line(self):
+  def _parse_text_lines(self):
     if self._pos >= self._end:
       return None
+
+    text_lines = []
     toks = []
     while True:
       tok = self.next_tok(process_string=False, process_c_comments=False, process_python_comments=False, custom_toks=['{{', '{%'])
@@ -711,8 +731,12 @@ class Tokenizer:
 
       toks.append(tok)
       if tok.is_newline:
-        break
-    return _Block(toks, 'text')
+        text_lines.append(_Block(toks, 'text'))
+        toks = []
+
+    if len(toks) > 0:
+      text_lines.append(_Block(toks, 'text'))
+    return text_lines
 
   def _parse_code_lines(self):
     lines = []
@@ -918,7 +942,7 @@ class _Block:
     self._remove_tail_blank = ''
 
   def __str__(self):
-    return '[' + self.type + ']' + '“' + self.text + '“'
+    return '[' + self.type + ']' + '"' + self.text + '"'
 
   @property
   def type(self):
@@ -944,26 +968,6 @@ class _Block:
   @property
   def is_empty(self):
     return len(self._tokens) == 0
-  @property
-  def line_begin(self):
-    if len(self._tokens) == 0:
-      return -1
-    else:
-      return self._tokens[0].line
-
-  @property
-  def line_end(self):
-    if len(self._tokens) == 0:
-      return -1
-    else:
-      return self._tokens[-1].line
-
-  @property
-  def offset_start(self):
-    if len(self._tokens) == 0:
-      return -1
-    else:
-      return self._tokens[0].offset
 
   @property
   def text(self):
@@ -987,6 +991,10 @@ class _Block:
       else:
         return False
     return True
+
+  @property
+  def is_end_of_line(self):
+    return len(self._tokens) > 0 and self._tokens[-1].is_newline
 
   @property
   def is_comments(self):
@@ -1075,6 +1083,12 @@ class _Block:
       tok = self._tokens[0]
       self._tokens[0] = _Token(' ' * (blen - length), tok.line, tok.offset + length)
 
+  def trim_begin(self):
+    while len(self._tokens) > 0:
+      if self._tokens[0].is_blank_or_newline:
+        del self._tokens[0]
+      else:
+        break
   def trim_end(self):
     while len(self._tokens) > 0:
       if self._tokens[-1].is_blank_or_newline:

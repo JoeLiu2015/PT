@@ -148,19 +148,18 @@ The expression is starts with '{{' and ends with '}}'.
     
     ```
     For the dictionary, we can get its value by the property getter:
-    dic.keyname     - it can get the value from the dic with its key 'keyname'
+    dic.keyname - it can get the value from the dic with its key 'keyname'
  
     ```
     
   - blank trim
     
     ```
-    1) If the expression starts with '{{-', it means trim the left blank including
-       ' ', '\t', '\r', '\n'.
-    2) If the expression ends with '-}}', it means trim the right blank including 
-       ' ', '\t', '\r', '\n'.
-    3) For the code block, it alwasy ignore the leading or trailing blank including 
-       ' ', '\t', '\r', '\n'.
+    1) If an expression starts with {{-, it trims leading whitespace including ' ', '\t', '\r', and '\n'.
+    2) If an expression ends with -}}, it trims trailing whitespace including ' ', '\t', '\r', and '\n'.
+    3) If a code block starts with {%-, it trims leading whitespace including ' ', '\t', '\r', and '\n'.
+    4) If a code block ends with -%}, it trims trailing whitespace including ' ', '\t', '\r', and '\n'.
+    5) For code blocks in general, leading and trailing spaces or tabs (' ', '\t') are always ignored.
     ```
   
 
