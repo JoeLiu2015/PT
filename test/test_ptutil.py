@@ -67,6 +67,12 @@ class test_ptutil(unittest.TestCase):
     self.assertEqual(py[2], './temp/3.py')
 
 
+  def test_data_xml_not_found(self):
+    try:
+      m = data_xml("./invalid/invalid.xml")
+      self.assertFalse(True, "no exception")
+    except Exception as e:
+      self.assertTrue(str(e).startswith("File not found"))
 
 
   def test_data_xml(self):
@@ -91,6 +97,13 @@ class test_ptutil(unittest.TestCase):
     self.assertEqual(m.child.attrs['a'], 'a')
     self.assertEqual(m.child.text, 'child text')
     self.assertEqual(m.childs[2].text, 'child text')
+
+  def test_data_json_not_found(self):
+    try:
+      m = data_json("./invalid/invalid.json")
+      self.assertFalse(True, "no exception")
+    except Exception as e:
+      self.assertTrue(str(e).startswith("File not found"))
 
   def test_data_json(self):
     input = '''
@@ -174,6 +187,13 @@ g = fsafdsa
     self.assertEqual(x['a'], '123')
     self.assertEqual(x['b'], 'ab')
     self.assertEqual(x['c'], "['a','b']")
+
+  def test_data_yaml_not_found(self):
+    try:
+      m = data_yaml("./invalid/invalid.yaml")
+      self.assertFalse(True, "no exception")
+    except Exception as e:
+      self.assertTrue(str(e).startswith("File not found"))
 
   def test_data_yaml(self):
     input = '''

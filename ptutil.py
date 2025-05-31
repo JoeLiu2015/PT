@@ -74,7 +74,11 @@ def data_read(txt):
     return txt
 
 def data_json(json_input):
-  text = data_read(json_input)
+  text = json_input
+  if file_exists(json_input):
+    text = data_read(json_input)
+  elif json_input.endswith('.json') and '\n' not in json_input:
+    raise FileNotFoundError('File not found: ' + json_input)
   return json.loads(text, object_pairs_hook=OrderedDict)
 
 def data_ini(ini_input):
@@ -136,6 +140,8 @@ def data_xml(xml_input):
     else:
       domTree = xml.dom.minidom.parseString(xml_input)
   except Exception as err:
+    if not file_exists(xml_input) and xml_input.endswith('.xml'):
+      raise FileNotFoundError('File not found: ' + xml_input)
     raise SyntaxError('Failed to parse XML data: ' + str(err))
 
   element = domTree.documentElement
@@ -145,6 +151,8 @@ def data_yaml(yaml_input):
   yaml = yaml_input
   if file_exists(yaml_input):
     yaml = file_read(yaml_input)
+  elif yaml_input.endswith('.yaml') and '\n' not in yaml_input:
+    raise FileNotFoundError('File not found: ' + yaml_input)
 
   lines_tmp = yaml.splitlines()
   lines = []

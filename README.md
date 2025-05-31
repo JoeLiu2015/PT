@@ -467,13 +467,6 @@ single text
 
 #### 9.5 -yaml <argname=yaml file>
 We can use **-yaml** and following a YAML file to specify the input data.
-##### For every XML node, it expose the following properties:
-- **tag**: XML tag.
-- **attrs**: The attributes of the XML element, it is a OrderedDict.
-- **text**: The text of the XML element.
-- **childs**:The children of the XML element, it is an array.
-- **child_name**: Specify a single child node
-- **child_name[n]**: Specifies a child node that appears multiple times (0-based index).
 ##### Sample:
 test_yaml.pt
 ```
@@ -533,7 +526,7 @@ Test
 'desc'
 
 '#/components/schemas/Data_Struct'
-'0 - ONE'
+0 - ONE
 ```
 #### 9.6 -kv <argname=Key-Value file>
 We can use **-kv** and following a Key-Value file to specify the input data.
