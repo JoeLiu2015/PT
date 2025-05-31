@@ -116,13 +116,8 @@ class _PTCtx:
   def __init__(self, template, args={}, output_file=None):
     self._template = template
     self._output = ''
-    self._output_file = output_file
     self._output_file_hd = None
-    try:
-      if output_file is not None:
-        self._output_file_hd = ptutil.file_openw(self._output_file)
-    except Exception as ex:
-      self._log(LOG_ERROR, 'File to open output file "' + self._output_file + '": ' + str(ex))
+    self._open_output_file(output_file)
     self._code = ''
     self._g = globals().copy()
     self._l = locals().copy()
@@ -148,24 +143,11 @@ class _PTCtx:
       self._output_file = ''
 
   def variables(self, vars):
-    assert type(vars) is dict, 'The variables must be a dictionary.'
+    assert isinstance(vars, dict), 'The variables must be a dictionary.'
     self._l.update(vars)
 
   def output_file(self, file, ignore_template=False):
-    if self._output_file_hd is not None:
-      self._output_file_hd.close()
-      self._output_file_hd = None
-      self._output_file = ''
-    self._output_file = file
-    self._output_file_hd = None
-    if self._output_file is not None and self._output_file != '':
-      real_file = self._absolute_file(self._output_file, ignore_template)
-      try:
-        self._output_file_hd = ptutil.file_openw(real_file)
-        self._log(LOG_INFO, "Generate file: " + real_file)
-      except Exception as ex:
-        self._log(LOG_ERROR, 'File to open file "' + real_file + '": ' + str(ex))
-
+    return self._open_output_file(file, ignore_template)
   @property
   def log_level(self):
     return self._log_level
@@ -176,19 +158,11 @@ class _PTCtx:
 
   def eval(self):
     self._translate()
-    self._log(LOG_DEBUG, '======Code=====\r\n' + self.add_line_NO(self._code))
+    self._log_code()
     self._g.update(self._l)
     self._g['OrderedDict'] = collections.OrderedDict
     exec(self._code, self._g)
     return self._output
-
-  def add_line_NO(self, code):
-    code = code.replace('\r\n', '\n').replace('\r', '\n')
-    lines = code.split('\n')
-    for i in range(len(lines)):
-      stri = str(i+1).ljust(5)
-      lines[i] = stri + lines[i]
-    return os.linesep.join(lines)
 
   def output(self, str):
     indent = self.indent_str()
@@ -264,6 +238,22 @@ class _PTCtx:
       else:
         self._output += str
 
+  def _open_output_file(self, file, ignore_template=False):
+    if self._output_file_hd is not None:
+      self._output_file_hd.close()
+      self._output_file_hd = None
+      self._output_file = ''
+
+    self._output_file = file
+    self._output_file_hd = None
+    if self._output_file is not None and self._output_file != '':
+      real_file = self._absolute_file(self._output_file, ignore_template)
+      try:
+        self._output_file_hd = ptutil.file_openw(real_file)
+        self._log(LOG_INFO, "Generate file: " + real_file)
+      except Exception as ex:
+        self._log(LOG_ERROR, 'Failed to open file "' + real_file + '": ' + str(ex))
+
   def _translate(self):
     self._depth = 0
     tokenizer = Tokenizer(self._template)
@@ -332,12 +322,11 @@ class _PTCtx:
   def _on_code_(self, line):
     self._print_(self.TAB * self._depth + line)
 
-  def _absolute_file(self, file, ignore_template=False):
-    if os.path.isfile(self._template) and not ignore_template:
-      current_path = os.path.dirname(os.path.realpath(self._template))
-    else:
-      current_path = os.getcwd()
-    return os.path.abspath(os.path.join(current_path, file))
+  def _absolute_file(self, path, ignore_template=False):
+    base_dir = os.getcwd()
+    if not ignore_template and os.path.isfile(self._template):
+      base_dir = os.path.dirname(os.path.realpath(self._template))
+    return os.path.abspath(os.path.join(base_dir, path))
 
   def _print_(self, code):
     if not code[-1] in '\r\n':
@@ -436,7 +425,7 @@ class _PTCtx:
   def _find_var_name(self, l):
     i = 0
     while True:
-      name = '___mid_var_' + str(i) + '___'
+      name = f'___mid_var_{i}___'
       if name in l:
         i += 1
       else:
@@ -449,7 +438,17 @@ class _PTCtx:
     if level == LOG_INFO:  print('[INFO ]', msg)
     if level == LOG_DEBUG: print('[DEBUG]', msg)
 
+  def _log_code(self):
+    if self._log_level < LOG_DEBUG: return
+    self._log(LOG_DEBUG, '======Code=====\n' + self._add_line_NO(self._code))
 
+  def _add_line_NO(self, code):
+    code = code.replace('\r\n', '\n').replace('\r', '\n')
+    lines = code.split('\n')
+    for i in range(len(lines)):
+      stri = str(i+1).ljust(5)
+      lines[i] = stri + lines[i]
+    return os.linesep.join(lines)
 
 class Tokenizer:
   def __init__(self, data):
