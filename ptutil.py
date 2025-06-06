@@ -1,6 +1,7 @@
 import os
 import json
 import configparser
+import shutil
 import xml.dom.minidom
 import sqlite3
 from collections import OrderedDict
@@ -40,6 +41,8 @@ def file_write_all(file, data, encoding='utf-8'):
   with open(file, 'w', newline='\n', encoding=encoding) as fh:
     fh.write(data)
 
+def file_copy(src_file, dest_file):
+  shutil.copy(src_file, dest_file)
 
 def path_create(path):
   os.makedirs(path, exist_ok=True)
@@ -50,7 +53,6 @@ def path_exists(path):
 
 
 def path_delete(path):
-  import shutil
   shutil.rmtree(path, ignore_errors=True)
 
 def path_files(path, pattern):
@@ -64,7 +66,8 @@ def path_files(path, pattern):
 
   return ret
 
-
+def pth_copy(src_dir, dest_dir):
+  shutil.copytree(src_dir, dest_dir)
 
 
 def data_read(txt):
