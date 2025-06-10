@@ -277,10 +277,12 @@ def _xml2Dic(element):
         child_obj = getattr(ret, child_name)
         if isinstance(child_obj, OrderedDict):
           setattr(ret, child_name, [child_obj, child])
+          ret[child_name] = getattr(ret, child_name)
         else:
           child_obj.append(child)
       else:
         setattr(ret, child_name, child)
+        ret[child_name] = child
     elif isinstance(child, xml.dom.minidom.Text):
       txt += child.wholeText
 

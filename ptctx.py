@@ -137,10 +137,7 @@ class _PTCtx:
     return self._code
 
   def close(self):
-    if self._output_file_hd is not None:
-      self._output_file_hd.close()
-      self._output_file_hd = None
-      self._output_file = ''
+    self._close_output_file()
 
   def variables(self, vars):
     assert isinstance(vars, dict), 'The variables must be a dictionary.'
@@ -148,6 +145,13 @@ class _PTCtx:
 
   def output_file(self, file, ignore_template=False):
     return self._open_output_file(file, ignore_template)
+
+  def begin_file(self, file, ignore_template=False):
+    return self._open_output_file(file, ignore_template)
+
+  def end_file(self):
+    return self._close_output_file()
+
   @property
   def log_level(self):
     return self._log_level
@@ -238,11 +242,14 @@ class _PTCtx:
       else:
         self._output += str
 
-  def _open_output_file(self, file, ignore_template=False):
+  def _close_output_file(self):
     if self._output_file_hd is not None:
       self._output_file_hd.close()
       self._output_file_hd = None
       self._output_file = ''
+
+  def _open_output_file(self, file, ignore_template=False):
+    self._close_output_file()
 
     self._output_file = file
     self._output_file_hd = None
@@ -295,7 +302,7 @@ class _PTCtx:
               raise SyntaxError('\'' + first_word + '\' must match \'' + first_word[3:] + '\'')
             code_stack.pop(-1)
             self._depth -= 1
-          elif first_word in ['@include', '@output_file', '@extension', '@indent+', '@indent-']:
+          elif first_word in ['@include', '@output_file', '@extension', '@indent+', '@indent-', '@begin_file', '@end_file']:
             out_code = 'ctx.' + code[1:] #remove @
             if first_word == '@include':
               out_code = out_code.rstrip(' \t')
