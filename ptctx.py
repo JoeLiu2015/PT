@@ -92,7 +92,7 @@ options：
           else:
             raise SyntaxError('Invalid option "%s".' % option)
       out_text = ctx.eval()
-      if out_text: print(out_text)
+      if len(out_text.strip()) > 0: print(out_text)
 
     except Exception as err:
       print(str(err))
