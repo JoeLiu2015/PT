@@ -1,6 +1,12 @@
 @echo off
+
 :: User can configure the location of the pt module here (directory path)
-set PT_PATH=..\..\PT
+set "base_dir=%~dp0"
+set "relative_path=..\..\PT"
+pushd "%base_dir%"
+for %%I in ("%relative_path%") do set "PT_PATH=%%~fI"
+popd
+
 :: User can configure the Python path here
 set PYTHON_PATH=C:\Program Files\Python312\python.exe
 for /f "delims=" %%i in ('where python') do (
