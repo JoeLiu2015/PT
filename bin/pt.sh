@@ -4,6 +4,17 @@ PYTHON_PATH="/usr/bin/python3"  # Example Python path, modify accordingly
 # User can configure the location of the pt module here (directory path)
 PT_PATH="../../PT"
 
+
+# Get the right absolute path for PT module
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REL_PATH="../../PT"
+if command -v realpath >/dev/null 2>&1; then
+    PT_PATH="$(realpath "$SCRIPT_DIR/$REL_PATH")"
+else
+    PT_PATH="$(readlink -f "$SCRIPT_DIR/$REL_PATH")"
+fi
+
+
 # Check if the configured Python path exists
 if [ ! -f "$PYTHON_PATH" ]; then
     echo "Error: The configured Python path '$PYTHON_PATH' does not exist."
